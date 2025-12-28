@@ -265,7 +265,12 @@ function TierVideoList({
             key={button}
             className="flex items-center gap-4 rounded-xl bg-grey-50 p-4 transition-colors hover:bg-grey-100"
           >
-            <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-black">
+            <div
+              className="relative h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-black"
+              style={{
+                WebkitMaskImage: "-webkit-radial-gradient(white, black)",
+              }}
+            >
               {videoPath ? (
                 <video
                   ref={(el) => {
@@ -276,8 +281,9 @@ function TierVideoList({
                   loop
                   muted
                   playsInline
+                  autoPlay
                   preload="auto"
-                  // Don't autoPlay immediately
+                  crossOrigin="anonymous"
                   onCanPlay={() => handleCanPlay(button)}
                   onContextMenu={(e) => e.preventDefault()}
                   className="h-full w-full object-cover"
