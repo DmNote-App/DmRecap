@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, useRef } from "react";
+import { Suspense, useEffect, useMemo, useState, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
@@ -16,10 +16,14 @@ import {
   VArchiveError,
   fetchRecapData,
   type RecapResult,
-  type TierResponse
+  type TierResponse,
 } from "@/lib/varchive";
 
-function TierVideoList({ tiers }: { tiers: Record<number, TierResponse | null | undefined> }) {
+function TierVideoList({
+  tiers,
+}: {
+  tiers: Record<number, TierResponse | null | undefined>;
+}) {
   const videoRefs = useMemo(() => {
     return { current: {} as Record<number, HTMLVideoElement> };
   }, []);
@@ -34,7 +38,7 @@ function TierVideoList({ tiers }: { tiers: Record<number, TierResponse | null | 
   const isInViewRef = useRef(false);
 
   const tierConfigs = useMemo(() => {
-    return BUTTONS.map(button => {
+    return BUTTONS.map((button) => {
       const tierData = tiers[button];
       let videoPath: string | null = null;
       let isBeginner = false;
@@ -50,7 +54,7 @@ function TierVideoList({ tiers }: { tiers: Record<number, TierResponse | null | 
           "platinum",
           "diamond",
           "master",
-          "grandmaster"
+          "grandmaster",
         ];
         const match = tiersList.find((t) => lower.startsWith(t));
         if (match) {
@@ -65,7 +69,7 @@ function TierVideoList({ tiers }: { tiers: Record<number, TierResponse | null | 
     });
   }, [tiers]);
 
-  const videoCount = tierConfigs.filter(c => c.videoPath).length;
+  const videoCount = tierConfigs.filter((c) => c.videoPath).length;
 
   useEffect(() => {
     isInViewRef.current = isInView;
@@ -153,22 +157,24 @@ function TierVideoList({ tiers }: { tiers: Record<number, TierResponse | null | 
 
       const startPlayback = async () => {
         // Pause all videos before syncing to a common start point
-        videos.forEach(video => {
+        videos.forEach((video) => {
           video.pause();
         });
 
         // Seek all videos to the start and wait for the seek to settle
-        await Promise.all(videos.map(video => seekTo(video, 0)));
+        await Promise.all(videos.map((video) => seekTo(video, 0)));
 
         // Start all videos in the same render frame
         await new Promise(requestAnimationFrame);
 
-        const playPromises = videos.map(video => video.play().catch(() => { }));
+        const playPromises = videos.map((video) =>
+          video.play().catch(() => {})
+        );
         await Promise.all(playPromises);
 
         // After all play() promises resolve, force sync one more time
         const masterTime = videos[0]?.currentTime ?? 0;
-        videos.forEach(video => {
+        videos.forEach((video) => {
           if (Math.abs(video.currentTime - masterTime) > 0.02) {
             video.currentTime = masterTime;
           }
@@ -192,7 +198,7 @@ function TierVideoList({ tiers }: { tiers: Record<number, TierResponse | null | 
       stopSync();
 
       const masterTime = videos[0]?.currentTime ?? 0;
-      videos.forEach(video => {
+      videos.forEach((video) => {
         if (Math.abs(video.currentTime - masterTime) > 0.02) {
           video.currentTime = masterTime;
         }
@@ -206,16 +212,16 @@ function TierVideoList({ tiers }: { tiers: Record<number, TierResponse | null | 
     if (syncIntervalId.current !== null) return;
 
     const masterTime = videos[0]?.currentTime ?? 0;
-    videos.forEach(video => {
+    videos.forEach((video) => {
       if (Math.abs(video.currentTime - masterTime) > 0.02) {
         video.currentTime = masterTime;
       }
     });
 
-    const playPromises = videos.map(video => video.play().catch(() => { }));
+    const playPromises = videos.map((video) => video.play().catch(() => {}));
     Promise.all(playPromises).then(() => {
       const syncedTime = videos[0]?.currentTime ?? 0;
-      videos.forEach(video => {
+      videos.forEach((video) => {
         if (Math.abs(video.currentTime - syncedTime) > 0.02) {
           video.currentTime = syncedTime;
         }
@@ -236,71 +242,80 @@ function TierVideoList({ tiers }: { tiers: Record<number, TierResponse | null | 
   const handleCanPlay = (button: number) => {
     if (!readySet.current.has(button)) {
       readySet.current.add(button);
-      setReadyCount(prev => prev + 1);
+      setReadyCount((prev) => prev + 1);
     }
   };
 
   return (
-    <div ref={containerRef} className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
-      {tierConfigs.map(({ button, tierData, videoPath, isBeginner, isAmateur }) => (
-        <div
-          key={button}
-          className="flex items-center gap-4 rounded-xl bg-grey-50 p-4 transition-colors hover:bg-grey-100"
-        >
-          <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-black">
-            {videoPath ? (
-              <video
-                ref={(el) => {
-                  if (el) videoRefs.current[button] = el;
-                  else delete videoRefs.current[button];
-                }}
-                src={videoPath}
-                loop
-                muted
-                playsInline
-                preload="auto"
-                // Don't autoPlay immediately
-                onCanPlay={() => handleCanPlay(button)}
-                onContextMenu={(e) => e.preventDefault()}
-                className="h-full w-full object-cover"
-              />
-            ) : isBeginner ? (
-              <div className="flex h-full w-full flex-col items-center justify-center bg-[#e8f5e9]">
-                <Sprout size={32} className="text-[#4caf50]" />
-              </div>
-            ) : isAmateur ? (
-              <div className="flex h-full w-full flex-col items-center justify-center bg-[#fff3e0]">
-                <Gamepad2 size={32} className="text-[#ff9800]" />
-              </div>
-            ) : (
-              <div className="h-full w-full bg-grey-200" />
-            )}
-          </div>
+    <div
+      ref={containerRef}
+      className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2"
+    >
+      {tierConfigs.map(
+        ({ button, tierData, videoPath, isBeginner, isAmateur }) => (
+          <div
+            key={button}
+            className="flex items-center gap-4 rounded-xl bg-grey-50 p-4 transition-colors hover:bg-grey-100"
+          >
+            <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-black">
+              {videoPath ? (
+                <video
+                  ref={(el) => {
+                    if (el) videoRefs.current[button] = el;
+                    else delete videoRefs.current[button];
+                  }}
+                  src={videoPath}
+                  loop
+                  muted
+                  playsInline
+                  preload="auto"
+                  // Don't autoPlay immediately
+                  onCanPlay={() => handleCanPlay(button)}
+                  onContextMenu={(e) => e.preventDefault()}
+                  className="h-full w-full object-cover"
+                />
+              ) : isBeginner ? (
+                <div className="flex h-full w-full flex-col items-center justify-center bg-[#e8f5e9]">
+                  <Sprout size={32} className="text-[#4caf50]" />
+                </div>
+              ) : isAmateur ? (
+                <div className="flex h-full w-full flex-col items-center justify-center bg-[#fff3e0]">
+                  <Gamepad2 size={32} className="text-[#ff9800]" />
+                </div>
+              ) : (
+                <div className="h-full w-full bg-grey-200" />
+              )}
+            </div>
 
-          <div className="flex flex-col min-w-0 flex-1">
-            <p className="text-xs font-bold text-grey-500 mb-0.5">
-              {button}B TIER
-            </p>
-            {tierData ? (
-              <>
-                <h4 className="truncate text-xl font-bold text-grey-900">
-                  {tierData.tier.name}
-                </h4>
-                <p className="text-base font-bold text-brand">
-                  {formatCount(Math.round(tierData.tierPoint))} P
-                </p>
-              </>
-            ) : (
-              <p className="text-sm font-medium text-grey-400">기록 없음</p>
-            )}
+            <div className="flex flex-col min-w-0 flex-1">
+              <p className="text-xs font-bold text-grey-500 mb-0.5">
+                {button}B TIER
+              </p>
+              {tierData ? (
+                <>
+                  <h4 className="truncate text-xl font-bold text-grey-900">
+                    {tierData.tier.name}
+                  </h4>
+                  <p className="text-base font-bold text-brand">
+                    {formatCount(Math.round(tierData.tierPoint))} P
+                  </p>
+                </>
+              ) : (
+                <p className="text-sm font-medium text-grey-400">기록 없음</p>
+              )}
+            </div>
           </div>
-        </div>
-      ))}
+        )
+      )}
     </div>
   );
 }
 
-function TopList({ tiers }: { tiers: Record<number, TierResponse | null | undefined> }) {
+function TopList({
+  tiers,
+}: {
+  tiers: Record<number, TierResponse | null | undefined>;
+}) {
   return (
     <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
       {BUTTONS.map((button) => {
@@ -308,7 +323,10 @@ function TopList({ tiers }: { tiers: Record<number, TierResponse | null | undefi
         const topList = tierData?.topList?.slice(0, 5) ?? [];
 
         return (
-          <div key={button} className="flex h-[486px] flex-col rounded-2xl bg-grey-50 p-5 transition-colors hover:bg-grey-100">
+          <div
+            key={button}
+            className="flex h-[486px] flex-col rounded-2xl bg-grey-50 p-5 transition-colors hover:bg-grey-100"
+          >
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-bold text-grey-900 flex items-center gap-2">
                 <span className="text-brand">{button}B</span> TOP 5
@@ -327,13 +345,20 @@ function TopList({ tiers }: { tiers: Record<number, TierResponse | null | undefi
                     key={`${index}-${item.title}`}
                     className="flex items-center gap-3 rounded-xl bg-white p-3 border border-grey-100"
                   >
-                    <span className={`
+                    <span
+                      className={`
                       flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold
-                      ${index === 0 ? 'bg-yellow-100 text-yellow-700' :
-                        index === 1 ? 'bg-gray-100 text-gray-700' :
-                          index === 2 ? 'bg-orange-100 text-orange-700' :
-                            'bg-grey-100 text-grey-500'}
-                    `}>
+                      ${
+                        index === 0
+                          ? "bg-yellow-100 text-yellow-700"
+                          : index === 1
+                          ? "bg-gray-100 text-gray-700"
+                          : index === 2
+                          ? "bg-orange-100 text-orange-700"
+                          : "bg-grey-100 text-grey-500"
+                      }
+                    `}
+                    >
                       {index + 1}
                     </span>
                     <img
@@ -349,16 +374,21 @@ function TopList({ tiers }: { tiers: Record<number, TierResponse | null | undefi
                         </span>
                       </div>
                       <div className="flex items-center gap-2 mt-0.5">
-                        <span className={`
+                        <span
+                          className={`
                           px-1.5 py-0.5 rounded text-[10px] font-bold tracking-tight
-                          ${item.pattern.startsWith("SC")
-                            ? "bg-purple-50 text-purple-600"
-                            : "bg-grey-100 text-grey-600"}
-                        `}>
+                          ${
+                            item.pattern.startsWith("SC")
+                              ? "bg-purple-50 text-purple-600"
+                              : "bg-grey-100 text-grey-600"
+                          }
+                        `}
+                        >
                           {item.pattern}
                         </span>
                         <span className="text-xs font-medium text-grey-500">
-                          {formatScore(Number(item.score))}% / {formatScore(Number(item.rating))} P
+                          {formatScore(Number(item.score))}% /{" "}
+                          {formatScore(Number(item.rating))} P
                         </span>
                       </div>
                     </div>
@@ -367,7 +397,9 @@ function TopList({ tiers }: { tiers: Record<number, TierResponse | null | undefi
               </div>
             ) : (
               <div className="flex flex-1 items-center justify-center rounded-xl border-2 border-dashed border-grey-200 bg-grey-50/50">
-                <span className="text-sm font-medium text-grey-400">기록 없음</span>
+                <span className="text-sm font-medium text-grey-400">
+                  기록 없음
+                </span>
               </div>
             )}
           </div>
@@ -382,7 +414,7 @@ const RANGE_START_ISO = "2025-01-01T00:00:00+09:00";
 function formatScore(value: number) {
   return new Intl.NumberFormat("ko-KR", {
     minimumFractionDigits: 2,
-    maximumFractionDigits: 2
+    maximumFractionDigits: 2,
   }).format(value);
 }
 
@@ -392,11 +424,15 @@ function formatCount(value: number) {
 
 function formatPercent(value: number) {
   return new Intl.NumberFormat("ko-KR", {
-    maximumFractionDigits: 1
+    maximumFractionDigits: 1,
   }).format(value);
 }
 
-function PlayStyleLineChart({ stats }: { stats: { buttonRatios: Record<number, number> } }) {
+function PlayStyleLineChart({
+  stats,
+}: {
+  stats: { buttonRatios: Record<number, number> };
+}) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(300);
 
@@ -425,7 +461,7 @@ function PlayStyleLineChart({ stats }: { stats: { buttonRatios: Record<number, n
   const chartWidth = width - paddingX * 2;
 
   // Calculate max value for dynamic scaling
-  const maxValue = Math.max(...buttons.map(b => stats.buttonRatios[b] || 0));
+  const maxValue = Math.max(...buttons.map((b) => stats.buttonRatios[b] || 0));
   const yDomainMax = maxValue > 0 ? maxValue : 100;
 
   // Calculate points
@@ -435,17 +471,17 @@ function PlayStyleLineChart({ stats }: { stats: { buttonRatios: Record<number, n
     const normalized = Math.min(Math.max(value, 0), yDomainMax) / yDomainMax;
 
     // Distribute equally along X
-    const x = paddingX + (i * (chartWidth / (buttons.length - 1)));
+    const x = paddingX + i * (chartWidth / (buttons.length - 1));
     // Y is inverted (0 at bottom)
-    const y = (height - paddingY) - (normalized * chartHeight);
+    const y = height - paddingY - normalized * chartHeight;
 
     return { x, y, value, btn };
   });
 
   // Create path string (SVG polyline/path)
-  const pathData = points.map((p, i) =>
-    `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`
-  ).join(" ");
+  const pathData = points
+    .map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${p.y}`)
+    .join(" ");
 
   // Create fill area path (closed loop)
   const fillPathData = `
@@ -457,7 +493,11 @@ function PlayStyleLineChart({ stats }: { stats: { buttonRatios: Record<number, n
 
   return (
     // Set a fixed height styling on the container so the aspect ratio matches the viewBox
-    <div ref={containerRef} className="w-full min-w-0 flex items-end justify-center" style={{ height: `${height}px` }}>
+    <div
+      ref={containerRef}
+      className="w-full min-w-0 flex items-end justify-center"
+      style={{ height: `${height}px` }}
+    >
       <svg
         width="100%"
         height="100%"
@@ -481,7 +521,7 @@ function PlayStyleLineChart({ stats }: { stats: { buttonRatios: Record<number, n
 
         {/* Horizontal Grid lines - adjusted for cleaner look */}
         {[0, 0.25, 0.5, 0.75, 1].map((level) => {
-          const y = (height - paddingY) - (level * chartHeight);
+          const y = height - paddingY - level * chartHeight;
           return (
             <line
               key={`hgrid-${level}`}
@@ -529,7 +569,9 @@ function PlayStyleLineChart({ stats }: { stats: { buttonRatios: Record<number, n
               x={p.x}
               y={height}
               // Smart text-anchor to prevent overflow at edges
-              textAnchor={i === 0 ? "start" : i === points.length - 1 ? "end" : "middle"}
+              textAnchor={
+                i === 0 ? "start" : i === points.length - 1 ? "end" : "middle"
+              }
               className="text-xs font-bold fill-grey-500"
             >
               {p.btn}B
@@ -577,7 +619,7 @@ function calculateAchievements(data: RecapResult): Achievement[] {
       description: "최고 정확도 100% 달성",
       condition: `최고 정확도 ${formatScore(stats.maxRate)}%`,
       color: "text-amber-600",
-      bgColor: "bg-amber-50"
+      bgColor: "bg-amber-50",
     });
   }
 
@@ -589,7 +631,7 @@ function calculateAchievements(data: RecapResult): Achievement[] {
       description: "퍼펙트 100곡 이상 달성",
       condition: `퍼펙트 플레이 ${formatCount(stats.perfectCount)}곡`,
       color: "text-rose-600",
-      bgColor: "bg-rose-50"
+      bgColor: "bg-rose-50",
     });
   } else if (stats.perfectCount === 1) {
     achievements.push({
@@ -598,7 +640,7 @@ function calculateAchievements(data: RecapResult): Achievement[] {
       description: "첫 번째 퍼펙트 달성",
       condition: `퍼펙트 플레이 ${stats.perfectCount}곡`,
       color: "text-pink-600",
-      bgColor: "bg-pink-50"
+      bgColor: "bg-pink-50",
     });
   }
 
@@ -610,7 +652,7 @@ function calculateAchievements(data: RecapResult): Achievement[] {
       description: "맥스 콤보 500곡 이상 달성",
       condition: `맥스 콤보 ${formatCount(stats.maxComboCount)}곡`,
       color: "text-purple-600",
-      bgColor: "bg-purple-50"
+      bgColor: "bg-purple-50",
     });
   } else if (stats.maxComboCount >= 200) {
     achievements.push({
@@ -619,7 +661,7 @@ function calculateAchievements(data: RecapResult): Achievement[] {
       description: "맥스 콤보 200곡 이상 달성",
       condition: `맥스 콤보 ${formatCount(stats.maxComboCount)}곡`,
       color: "text-violet-600",
-      bgColor: "bg-violet-50"
+      bgColor: "bg-violet-50",
     });
   } else if (stats.maxComboCount >= 50) {
     achievements.push({
@@ -628,7 +670,7 @@ function calculateAchievements(data: RecapResult): Achievement[] {
       description: "맥스 콤보 50곡 이상 달성",
       condition: `맥스 콤보 ${formatCount(stats.maxComboCount)}곡`,
       color: "text-indigo-600",
-      bgColor: "bg-indigo-50"
+      bgColor: "bg-indigo-50",
     });
   }
 
@@ -637,27 +679,33 @@ function calculateAchievements(data: RecapResult): Achievement[] {
     4: "4버튼이 진리",
     5: "5버튼 가변은 못 참지",
     6: "난 6버튼이 좋아",
-    8: "꿈을 꾸는 8버튼 문어"
+    8: "꿈을 꾸는 8버튼 문어",
   };
   const buttonColors: Record<number, { color: string; bgColor: string }> = {
     4: { color: "text-green-600", bgColor: "bg-green-50" },
     5: { color: "text-cyan-600", bgColor: "bg-cyan-50" },
     6: { color: "text-blue-600", bgColor: "bg-blue-50" },
-    8: { color: "text-orange-600", bgColor: "bg-orange-50" }
+    8: { color: "text-orange-600", bgColor: "bg-orange-50" },
   };
 
-  const maxButton = BUTTONS.reduce((max, btn) =>
-    (stats.buttonRatios[btn] ?? 0) > (stats.buttonRatios[max] ?? 0) ? btn : max
-    , BUTTONS[0]);
+  const maxButton = BUTTONS.reduce(
+    (max, btn) =>
+      (stats.buttonRatios[btn] ?? 0) > (stats.buttonRatios[max] ?? 0)
+        ? btn
+        : max,
+    BUTTONS[0]
+  );
 
   if (stats.buttonRatios[maxButton] > 0) {
     achievements.push({
       id: `button-${maxButton}`,
       title: buttonTitles[maxButton],
       description: `${maxButton}버튼 플레이 비율 1위`,
-      condition: `${maxButton}B 비율 ${formatPercent(stats.buttonRatios[maxButton])}%`,
+      condition: `${maxButton}B 비율 ${formatPercent(
+        stats.buttonRatios[maxButton]
+      )}%`,
       color: buttonColors[maxButton].color,
-      bgColor: buttonColors[maxButton].bgColor
+      bgColor: buttonColors[maxButton].bgColor,
     });
   }
 
@@ -669,7 +717,7 @@ function calculateAchievements(data: RecapResult): Achievement[] {
       description: "기록 2,000개 이상 등록",
       condition: `등록 기록 ${formatCount(stats.totalRecords)}개`,
       color: "text-brand",
-      bgColor: "bg-blue-50"
+      bgColor: "bg-blue-50",
     });
   } else if (stats.totalRecords >= 500) {
     achievements.push({
@@ -678,7 +726,7 @@ function calculateAchievements(data: RecapResult): Achievement[] {
       description: "기록 500개 이상 등록",
       condition: `등록 기록 ${formatCount(stats.totalRecords)}개`,
       color: "text-sky-600",
-      bgColor: "bg-sky-50"
+      bgColor: "bg-sky-50",
     });
   } else if (stats.totalRecords >= 100) {
     achievements.push({
@@ -687,53 +735,59 @@ function calculateAchievements(data: RecapResult): Achievement[] {
       description: "기록 100개 이상 등록",
       condition: `등록 기록 ${formatCount(stats.totalRecords)}개`,
       color: "text-teal-600",
-      bgColor: "bg-teal-50"
+      bgColor: "bg-teal-50",
     });
   }
 
   // 6. 티어 관련 칭호 (가장 높은 것만)
-  const tierNames = BUTTONS.map(btn => tiers[btn]?.tier?.name?.toLowerCase() || "");
+  const tierNames = BUTTONS.map(
+    (btn) => tiers[btn]?.tier?.name?.toLowerCase() || ""
+  );
 
-  if (tierNames.some(name => name.includes("grand master"))) {
+  if (tierNames.some((name) => name.includes("grand master"))) {
     achievements.push({
       id: "tier-grandmaster",
       title: "정상에 서다",
       description: "그랜드 마스터 티어 달성",
       condition: "Grand Master",
       color: "text-yellow-600",
-      bgColor: "bg-yellow-50"
+      bgColor: "bg-yellow-50",
     });
-  } else if (tierNames.some(name => name.includes("master") && !name.includes("grand"))) {
+  } else if (
+    tierNames.some((name) => name.includes("master") && !name.includes("grand"))
+  ) {
     achievements.push({
       id: "tier-master",
       title: "마스터의 경지",
       description: "마스터 티어 달성",
       condition: "Master",
       color: "text-red-600",
-      bgColor: "bg-red-50"
+      bgColor: "bg-red-50",
     });
-  } else if (tierNames.some(name => name.includes("diamond"))) {
+  } else if (tierNames.some((name) => name.includes("diamond"))) {
     achievements.push({
       id: "tier-diamond",
       title: "반짝이는 실력",
       description: "다이아몬드 티어 달성",
       condition: "Diamond",
       color: "text-cyan-600",
-      bgColor: "bg-cyan-50"
+      bgColor: "bg-cyan-50",
     });
-  } else if (tierNames.some(name => name.includes("platinum"))) {
+  } else if (tierNames.some((name) => name.includes("platinum"))) {
     achievements.push({
       id: "tier-platinum",
       title: "상위권의 증표",
       description: "플래티넘 티어 달성",
       condition: "Platinum",
       color: "text-emerald-600",
-      bgColor: "bg-emerald-50"
+      bgColor: "bg-emerald-50",
     });
   }
 
   // 7. 버튼 컬렉터 - 4개 버튼 모두 기록 있음
-  const allButtonsPlayed = BUTTONS.every(btn => (stats.buttonCounts[btn] ?? 0) > 0);
+  const allButtonsPlayed = BUTTONS.every(
+    (btn) => (stats.buttonCounts[btn] ?? 0) > 0
+  );
   if (allButtonsPlayed) {
     achievements.push({
       id: "button-collector",
@@ -741,14 +795,12 @@ function calculateAchievements(data: RecapResult): Achievement[] {
       description: "4개 버튼 모두 플레이",
       condition: "4B, 5B, 6B, 8B 모두 기록",
       color: "text-fuchsia-600",
-      bgColor: "bg-fuchsia-50"
+      bgColor: "bg-fuchsia-50",
     });
   }
 
   return achievements;
 }
-
-
 
 function RecapGrid({ data }: { data: RecapResult }) {
   const { stats } = data;
@@ -764,43 +816,43 @@ function RecapGrid({ data }: { data: RecapResult }) {
       value: `${formatCount(stats.totalRecords)}`,
       unit: "개",
       subtitle: `총 클리어 패턴 ${formatCount(data.totalClearedPatterns)}개`,
-      accentColor: "text-brand"
+      accentColor: "text-brand",
     },
     {
       title: "평균 정확도",
       value: `${formatScore(stats.averageRate)}`,
       unit: "%",
       subtitle: "전체 기록 평균",
-      accentColor: "text-green-500"
+      accentColor: "text-green-500",
     },
     {
       title: "최고 정확도",
       value: `${formatScore(stats.maxRate)}`,
       unit: "%",
       subtitle: "Best Rate",
-      accentColor: "text-amber-500"
+      accentColor: "text-amber-500",
     },
     {
       title: "맥스 콤보",
       value: `${formatCount(stats.maxComboCount)}`,
       unit: "곡",
       subtitle: "BREAK 없이 클리어",
-      accentColor: "text-purple-500"
+      accentColor: "text-purple-500",
     },
     {
       title: "퍼펙트 플레이",
       value: `${formatCount(stats.perfectCount)}`,
       unit: "곡",
       subtitle: "짜릿한 100% 달성",
-      accentColor: "text-rose-500"
+      accentColor: "text-rose-500",
     },
     {
       title: "티어 포인트 높은 팩",
       value: dlcValue,
       unit: "",
       subtitle: dlcSubtitle,
-      accentColor: "text-indigo-500"
-    }
+      accentColor: "text-indigo-500",
+    },
   ];
 
   return (
@@ -809,8 +861,12 @@ function RecapGrid({ data }: { data: RecapResult }) {
         <div key={index} className="ui-card hover:bg-white">
           <p className="text-sm font-bold text-grey-500">{card.title}</p>
           <div className="mt-2 flex items-baseline gap-1">
-            <h3 className={`text-3xl font-bold ${card.accentColor}`}>{card.value}</h3>
-            <span className="text-lg font-medium text-grey-700">{card.unit}</span>
+            <h3 className={`text-3xl font-bold ${card.accentColor}`}>
+              {card.value}
+            </h3>
+            <span className="text-lg font-medium text-grey-700">
+              {card.unit}
+            </span>
           </div>
           <p className="mt-2 text-sm text-grey-400">{card.subtitle}</p>
         </div>
@@ -855,11 +911,19 @@ function RecapSkeleton() {
               {Array.from({ length: 4 }).map((_, i) => (
                 <div key={i} className="group">
                   <div className="flex justify-between text-sm font-medium mb-1">
-                    <span className="text-grey-700"><Skeleton width={70} /></span>
-                    <span className="text-grey-900"><Skeleton width={40} /></span>
+                    <span className="text-grey-700">
+                      <Skeleton width={70} />
+                    </span>
+                    <span className="text-grey-900">
+                      <Skeleton width={40} />
+                    </span>
                   </div>
                   <div className="h-3 w-full rounded-full bg-grey-100 overflow-hidden">
-                    <Skeleton height={12} borderRadius={999} containerClassName="block h-full" />
+                    <Skeleton
+                      height={12}
+                      borderRadius={999}
+                      containerClassName="block h-full"
+                    />
                   </div>
                   <p className="mt-0.5 text-right text-xs font-medium text-grey-500">
                     <Skeleton width={35} />
@@ -868,7 +932,10 @@ function RecapSkeleton() {
               ))}
             </div>
             {/* Chart placeholder - matches PlayStyleLineChart height */}
-            <div className="flex-1 flex items-end justify-center mt-2 min-w-0 w-full" style={{ height: '240px' }}>
+            <div
+              className="flex-1 flex items-end justify-center mt-2 min-w-0 w-full"
+              style={{ height: "240px" }}
+            >
               <Skeleton width="100%" height="100%" borderRadius={0} />
             </div>
           </section>
@@ -880,10 +947,16 @@ function RecapSkeleton() {
             </h2>
             <div className="mt-6 grid grid-cols-1 gap-4">
               {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="flex items-center gap-4 rounded-xl bg-grey-50 p-4">
+                <div
+                  key={i}
+                  className="flex items-center gap-4 rounded-xl bg-grey-50 p-4"
+                >
                   {/* h-20 w-20 = 80px */}
                   <div className="h-20 w-20 shrink-0 rounded-lg overflow-hidden">
-                    <Skeleton height="100%" containerClassName="flex h-full w-full" />
+                    <Skeleton
+                      height="100%"
+                      containerClassName="flex h-full w-full"
+                    />
                   </div>
                   <div className="flex-1 flex flex-col justify-center gap-1 min-w-0">
                     <div className="flex justify-between items-center">
@@ -918,10 +991,16 @@ function RecapSkeleton() {
             </h2>
             <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
               {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="flex items-center gap-4 rounded-xl bg-grey-50 p-4">
+                <div
+                  key={i}
+                  className="flex items-center gap-4 rounded-xl bg-grey-50 p-4"
+                >
                   {/* h-20 w-20 = 80px, rounded-xl */}
                   <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-grey-200">
-                    <Skeleton height="100%" containerClassName="flex h-full w-full" />
+                    <Skeleton
+                      height="100%"
+                      containerClassName="flex h-full w-full"
+                    />
                   </div>
                   <div className="flex flex-col min-w-0 flex-1">
                     <p className="text-xs font-bold text-grey-500 mb-0.5">
@@ -946,7 +1025,10 @@ function RecapSkeleton() {
             </h2>
             <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
               {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="flex h-[486px] flex-col rounded-2xl bg-grey-50 p-5">
+                <div
+                  key={i}
+                  className="flex h-[486px] flex-col rounded-2xl bg-grey-50 p-5"
+                >
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-lg font-bold text-grey-900 flex items-center gap-2">
                       <Skeleton width={85} />
@@ -957,12 +1039,18 @@ function RecapSkeleton() {
                   </div>
                   <div className="flex flex-col gap-2">
                     {Array.from({ length: 5 }).map((_, j) => (
-                      <div key={j} className="flex items-center gap-3 rounded-xl bg-white p-3 border border-grey-100">
+                      <div
+                        key={j}
+                        className="flex items-center gap-3 rounded-xl bg-white p-3 border border-grey-100"
+                      >
                         {/* h-6 w-6 = 24px circle */}
                         <Skeleton circle width={24} height={24} />
                         {/* h-12 w-12 = 48px */}
                         <div className="h-12 w-12 shrink-0 rounded-lg overflow-hidden">
-                          <Skeleton height="100%" containerClassName="flex h-full w-full" />
+                          <Skeleton
+                            height="100%"
+                            containerClassName="flex h-full w-full"
+                          />
                         </div>
                         <div className="flex flex-col min-w-0 flex-1">
                           <span className="truncate text-sm font-bold text-grey-900">
@@ -990,7 +1078,7 @@ function RecapSkeleton() {
   );
 }
 
-export default function RecapPage() {
+function RecapContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { nickname, setNickname } = useNicknameStore();
@@ -1009,7 +1097,7 @@ export default function RecapPage() {
   const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ["recap", activeNickname, rangeLabel],
     queryFn: () => fetchRecapData(activeNickname, rangeStart),
-    enabled: Boolean(activeNickname)
+    enabled: Boolean(activeNickname),
   });
 
   return (
@@ -1024,15 +1112,14 @@ export default function RecapPage() {
             <ArrowLeft size={24} />
             <span className="text-lg font-bold">홈으로</span>
           </button>
-          <div className="chip-blue">
-            2025 RECAP
-          </div>
+          <div className="chip-blue">2025 RECAP</div>
         </header>
 
         {/* Header */}
         <div className="mb-4">
           <h1 className="text-4xl font-bold text-grey-900 md:text-5xl">
-            {activeNickname}님의<br />
+            {activeNickname}님의
+            <br />
             <span className="text-brand">2025년</span>
           </h1>
           <p className="mt-4 text-grey-600">
@@ -1060,7 +1147,11 @@ export default function RecapPage() {
                 calculateAchievements(data!).map((achievement) => (
                   <Tooltip
                     key={achievement.id}
-                    content={<span className="font-bold">{achievement.description}</span>}
+                    content={
+                      <span className="font-bold">
+                        {achievement.description}
+                      </span>
+                    }
                   >
                     <span
                       className={`cursor-help inline-flex items-center px-3 py-1 rounded-full text-sm font-bold ${achievement.bgColor} ${achievement.color} transition-colors hover:brightness-95`}
@@ -1080,7 +1171,9 @@ export default function RecapPage() {
 
           {isError && (
             <div className="glass-card flex flex-col items-center text-center p-12">
-              <p className="text-xl font-bold text-grey-800">기록을 불러오지 못했어요</p>
+              <p className="text-xl font-bold text-grey-800">
+                기록을 불러오지 못했어요
+              </p>
               <p className="mt-2 text-grey-500">
                 {error instanceof VArchiveError && error.code === 101
                   ? "닉네임을 찾을 수 없습니다. 정확한 닉네임인지 확인해주세요."
@@ -1100,8 +1193,6 @@ export default function RecapPage() {
             <>
               <RecapGrid data={data} />
 
-
-
               <div className="grid gap-4 md:grid-cols-3">
                 <section className="ui-card flex flex-col h-full">
                   <h2 className="section-title">플레이 스타일</h2>
@@ -1112,13 +1203,19 @@ export default function RecapPage() {
                       return (
                         <div key={button} className="group">
                           <div className="flex justify-between text-sm font-medium mb-1">
-                            <span className="text-grey-700">{button} BUTTON</span>
-                            <span className="text-grey-900">{formatPercent(ratio)}%</span>
+                            <span className="text-grey-700">
+                              {button} BUTTON
+                            </span>
+                            <span className="text-grey-900">
+                              {formatPercent(ratio)}%
+                            </span>
                           </div>
                           <div className="h-3 w-full rounded-full bg-grey-100 overflow-hidden">
                             <motion.div
                               initial={{ width: 0 }}
-                              whileInView={{ width: `${Math.min(ratio, 100)}%` }}
+                              whileInView={{
+                                width: `${Math.min(ratio, 100)}%`,
+                              }}
                               viewport={{ once: true }}
                               transition={{ duration: 1, ease: "circOut" }}
                               className="h-full rounded-full bg-brand group-hover:bg-[#1b64da] transition-colors"
@@ -1143,20 +1240,30 @@ export default function RecapPage() {
                       const entry = data.stats.topDjpowerByButton[button];
                       if (!entry) {
                         return (
-                          <div key={button} className="flex h-[117px] items-center gap-4 rounded-xl bg-grey-50 p-4">
+                          <div
+                            key={button}
+                            className="flex h-[117px] items-center gap-4 rounded-xl bg-grey-50 p-4"
+                          >
                             <div className="flex h-20 w-20 shrink-0 flex-col items-center justify-center gap-1 rounded-lg bg-grey-200 text-grey-400">
                               <Disc size={24} className="opacity-50" />
-                              <span className="text-[10px] font-bold">NO DATA</span>
+                              <span className="text-[10px] font-bold">
+                                NO DATA
+                              </span>
                             </div>
                             <div className="flex flex-col justify-center gap-1">
-                              <p className="text-xs font-bold text-grey-500">{button}B DJ POWER</p>
+                              <p className="text-xs font-bold text-grey-500">
+                                {button}B DJ POWER
+                              </p>
                               <p className="text-sm text-grey-400">기록 없음</p>
                             </div>
                           </div>
                         );
                       }
                       return (
-                        <div key={button} className="flex items-center gap-4 rounded-xl bg-grey-50 p-4 hover:bg-grey-100 transition-colors">
+                        <div
+                          key={button}
+                          className="flex items-center gap-4 rounded-xl bg-grey-50 p-4 hover:bg-grey-100 transition-colors"
+                        >
                           <img
                             src={`https://v-archive.net/static/images/jackets/${entry.title}.jpg`}
                             alt={entry.name}
@@ -1165,25 +1272,35 @@ export default function RecapPage() {
                           />
                           <div className="flex-1 flex flex-col justify-center gap-1 min-w-0">
                             <div className="flex justify-between items-center">
-                              <p className="text-xs font-bold text-grey-500">{button}B DJ POWER</p>
+                              <p className="text-xs font-bold text-grey-500">
+                                {button}B DJ POWER
+                              </p>
                               <span className="truncate text-[10px] font-medium text-grey-500 bg-white px-1.5 py-0.5 rounded border border-grey-100">
                                 {entry.dlc}
                               </span>
                             </div>
-                            <p className="text-lg font-bold text-grey-900 truncate -mt-0.5" title={entry.name}>
+                            <p
+                              className="text-lg font-bold text-grey-900 truncate -mt-0.5"
+                              title={entry.name}
+                            >
                               {entry.name}
                             </p>
                             <div className="flex items-center justify-between mt-0.5">
-                              <span className={`
+                              <span
+                                className={`
                                 px-1.5 py-0.5 rounded text-[10px] font-bold tracking-tight
-                                ${entry.pattern.startsWith("SC")
-                                  ? "bg-purple-50 text-purple-600"
-                                  : "bg-grey-100 text-grey-600"}
-                              `}>
+                                ${
+                                  entry.pattern.startsWith("SC")
+                                    ? "bg-purple-50 text-purple-600"
+                                    : "bg-grey-100 text-grey-600"
+                                }
+                              `}
+                              >
                                 {entry.pattern}
                               </span>
                               <span className="text-lg font-bold text-brand">
-                                {formatScore(entry.score)}% / {formatScore(entry.djpower)}
+                                {formatScore(entry.score)}% /{" "}
+                                {formatScore(entry.djpower)}
                               </span>
                             </div>
                           </div>
@@ -1202,8 +1319,6 @@ export default function RecapPage() {
                   <h2 className="section-title">성과표 TOP 포인트</h2>
                   <TopList tiers={data.tiers} />
                 </section>
-
-
               </div>
             </>
           )}
@@ -1212,8 +1327,30 @@ export default function RecapPage() {
 
       {/* Footer */}
       <footer className="w-full text-center text-sm text-grey-500 py-5">
-        <p>Developed by <span className="font-medium text-grey-700">DmNote</span> · API provided by <span className="font-medium text-grey-700">V-Archive</span></p>
+        <p>
+          Developed by <span className="font-medium text-grey-700">DmNote</span>{" "}
+          · API provided by{" "}
+          <span className="font-medium text-grey-700">V-Archive</span>
+        </p>
       </footer>
     </main>
+  );
+}
+
+export default function RecapPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="min-h-screen w-full bg-[#f2f4f6] pt-10">
+          <div className="mx-auto max-w-5xl px-6">
+            <div className="text-center py-20">
+              <div className="text-grey-600">로딩 중...</div>
+            </div>
+          </div>
+        </main>
+      }
+    >
+      <RecapContent />
+    </Suspense>
   );
 }

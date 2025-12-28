@@ -13,8 +13,7 @@ export async function promisePool<T, R>(
       return;
     }
 
-    let taskPromise: Promise<unknown>;
-    taskPromise = worker(item)
+    const taskPromise: Promise<void> = worker(item)
       .then((result) => {
         results.push(result);
       })
