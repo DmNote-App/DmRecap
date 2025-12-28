@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 :root {
-  --font-body: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+  --font-body: 'Pretendard JP', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
 
   /* Custom Color Palette */
   --grey-50: #f9fafb;
@@ -26,12 +26,17 @@
   --brand-light: #e8f3ff;
 }
 
+
+html,
+body {
+  height: 100%;
+}
+
 body {
   background-color: var(--grey-100);
   color: var(--grey-900);
   font-family: var(--font-body);
   -webkit-font-smoothing: antialiased;
-  min-height: 100vh;
 }
 
 @layer components {

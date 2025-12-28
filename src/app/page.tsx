@@ -36,7 +36,7 @@ export default function HomePage() {
   };
 
   return (
-    <main className="relative flex h-screen h-[100dvh] w-full flex-col items-center justify-center overflow-hidden px-6">
+    <main className="relative flex h-[100dvh] w-full flex-col items-center justify-center overflow-hidden px-6">
       {/* Background Blobs (Glass Effect) */}
       <div className="absolute inset-0 pointer-events-none -z-10 bg-[#f2f4f6]">
         <div className="absolute -top-[10%] -left-[10%] w-[50vw] h-[50vw] bg-blue-200/40 rounded-full blur-[120px]" />

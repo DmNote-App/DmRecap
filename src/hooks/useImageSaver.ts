@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback, RefObject } from "react";
+import html2canvas from "html2canvas";
 import * as htmlToImage from "html-to-image";
 
 // 프록시 환경에서도 올바른 API URL을 사용하도록 assetPrefix 설정
@@ -127,11 +128,13 @@ const IMAGE_PLACEHOLDER =
 
 /**
  * 이미지 저장 기능을 제공하는 커스텀 훅
+ * html-to-image를 사용하여 크로스 플랫폼 호환성 보장 (Windows, Mac, iOS, Android)
  */
 export function useImageSaver() {
   const [isSaving, setIsSaving] = useState(false);
   // 이미지 base64 캐시 (중복 요청 방지)
   const imageCache = useRef<Map<string, string>>(new Map());
+  const fontEmbedCSSCache = useRef<Map<string, string>>(new Map());
 
   // 이미지를 프록시를 통해 base64로 변환하는 함수
   const convertExternalImages = useCallback(
@@ -195,12 +198,51 @@ export function useImageSaver() {
     []
   );
 
+  const waitForFonts = useCallback(async () => {
+    if (typeof document === "undefined" || !document.fonts) return;
+
+    try {
+      await document.fonts.ready;
+      await Promise.all([
+        document.fonts.load('400 1em "Pretendard JP"'),
+        document.fonts.load('500 1em "Pretendard JP"'),
+        document.fonts.load('600 1em "Pretendard JP"'),
+        document.fonts.load('700 1em "Pretendard JP"'),
+      ]);
+    } catch (error) {
+      console.warn("폰트 로딩 대기 실패:", error);
+    }
+
+    await new Promise((resolve) => requestAnimationFrame(() => resolve(null)));
+    await new Promise((resolve) => requestAnimationFrame(() => resolve(null)));
+  }, []);
+
+  const getFontEmbedCSS = useCallback(
+    async (element: HTMLElement, preferredFontFormat: string) => {
+      const cached = fontEmbedCSSCache.current.get(preferredFontFormat);
+      if (cached) return cached;
+
+      try {
+        const css = await htmlToImage.getFontEmbedCSS(element, {
+          preferredFontFormat,
+        });
+        fontEmbedCSSCache.current.set(preferredFontFormat, css);
+        return css;
+      } catch (error) {
+        console.warn("폰트 임베딩 CSS 생성 실패:", error);
+        return "";
+      }
+    },
+    []
+  );
+
   // 요소를 이미지로 저장하는 함수
   const saveAsImage = useCallback(
     async (elementRef: RefObject<HTMLElement>, options: SaveImageOptions) => {
       if (!elementRef.current || isSaving) return;
 
       setIsSaving(true);
+      const element = elementRef.current;
       let originalSrcs: Map<HTMLImageElement, string> | null = null;
       let videoReplacements: VideoReplacement[] = [];
 
@@ -210,37 +252,55 @@ export function useImageSaver() {
 
         // video 요소를 이미지로 대체 (Safari 모바일 대응) - 먼저 실행
         try {
-          videoReplacements = replaceVideosWithImages(elementRef.current);
+          videoReplacements = replaceVideosWithImages(element);
         } catch (videoError) {
           console.warn("비디오 대체 실패, 계속 진행:", videoError);
         }
 
         // 외부 이미지를 base64로 변환 (병렬 처리됨)
         try {
-          originalSrcs = await convertExternalImages(elementRef.current);
+          originalSrcs = await convertExternalImages(element);
         } catch (imgError) {
           console.warn("외부 이미지 변환 실패, 계속 진행:", imgError);
         }
 
-        // 렌더링 완료 대기 (최소화)
+        // 렌더링 완료 대기
+        await waitForFonts();
+        const fontEmbedCSS = await getFontEmbedCSS(element, "woff2");
         await new Promise((resolve) => setTimeout(resolve, 100));
 
-        // html-to-image를 사용하여 PNG로 변환
-        const dataUrl = await htmlToImage.toPng(elementRef.current, {
-          quality: 1.0,
-          pixelRatio: options.pixelRatio ?? 3,
-          backgroundColor: options.backgroundColor ?? "#f2f4f6",
-          skipFonts: true,
-          cacheBust: true,
-          imagePlaceholder: IMAGE_PLACEHOLDER,
-          filter: (node) => {
-            // hidden video 태그 제외
-            if (node instanceof HTMLVideoElement) {
-              return false;
-            }
-            return true;
-          },
-        });
+        let dataUrl = "";
+
+        try {
+          // html-to-image를 사용하여 캡처 (크로스 플랫폼 호환성 우수)
+          dataUrl = await htmlToImage.toPng(element, {
+            quality: 1.0,
+            pixelRatio: options.pixelRatio ?? 3,
+            backgroundColor: options.backgroundColor ?? "#f2f4f6",
+            preferredFontFormat: "woff2",
+            fontEmbedCSS: fontEmbedCSS || undefined,
+            cacheBust: true,
+            imagePlaceholder: IMAGE_PLACEHOLDER,
+            filter: (node) => {
+              return !(node instanceof HTMLVideoElement);
+            },
+          });
+        } catch (htmlError) {
+          console.warn("html-to-image 실패, html2canvas로 재시도:", htmlError);
+          const canvas = await html2canvas(element, {
+            scale: options.pixelRatio ?? 3,
+            backgroundColor: options.backgroundColor ?? "#f2f4f6",
+            useCORS: true,
+            allowTaint: false,
+            logging: false,
+            scrollX: 0,
+            scrollY: 0,
+            windowWidth: element.scrollWidth,
+            windowHeight: element.scrollHeight,
+            ignoreElements: (node) => node instanceof HTMLVideoElement,
+          });
+          dataUrl = canvas.toDataURL("image/png", 1.0);
+        }
 
         // 다운로드 링크 생성
         const link = document.createElement("a");
@@ -269,12 +329,18 @@ export function useImageSaver() {
         setIsSaving(false);
       }
     },
-    [isSaving, convertExternalImages]
+    [
+      isSaving,
+      convertExternalImages,
+      waitForFonts,
+      getFontEmbedCSS,
+    ]
   );
 
   // 캐시 초기화 함수
   const clearCache = useCallback(() => {
     imageCache.current.clear();
+    fontEmbedCSSCache.current.clear();
   }, []);
 
   return {

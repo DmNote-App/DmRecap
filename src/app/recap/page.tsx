@@ -589,7 +589,10 @@ function PlayStyleLineChart({
               textAnchor={
                 i === 0 ? "start" : i === points.length - 1 ? "end" : "middle"
               }
-              className="text-xs font-bold fill-grey-500"
+              fontSize={12}
+              fontWeight={700}
+              fontFamily='"Pretendard JP", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif'
+              fill="#8b95a1"
             >
               {p.btn}B
             </text>
