@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 :root {
-  --font-body: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+  --font-body: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
 
   /* Custom Color Palette */
   --grey-50: #f9fafb;

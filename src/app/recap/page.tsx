@@ -17,7 +17,6 @@ import {
   Download,
 } from "lucide-react";
 import Tooltip from "@/components/Tooltip";
-import NicknameForm from "@/components/NicknameForm";
 import { useImageSaver } from "@/hooks/useImageSaver";
 import {
   BUTTONS,
