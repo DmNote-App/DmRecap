@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, useEffect, useMemo, useState, useRef } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import Skeleton, { SkeletonTheme } from "react-loading-skeleton";
@@ -18,10 +19,10 @@ import {
 } from "lucide-react";
 import Tooltip from "@/components/Tooltip";
 import { useImageSaver } from "@/hooks/useImageSaver";
-import { useRecapQuery } from "@/queries";
 import {
   BUTTONS,
   VArchiveError,
+  fetchRecapData,
   type RecapResult,
   type TierResponse,
 } from "@/lib/varchive";
@@ -1107,10 +1108,12 @@ function RecapContent() {
   const rangeStart = useMemo(() => new Date(RANGE_START_ISO), []);
   const rangeLabel = "2025년";
 
-  const { data, isLoading, isError, error, refetch } = useRecapQuery({
-    nickname: activeNickname,
-    rangeStart,
-    rangeLabel,
+  const { data, isLoading, isError, error, refetch } = useQuery({
+    queryKey: ["recap", activeNickname, rangeLabel],
+    queryFn: () => fetchRecapData(activeNickname, rangeStart),
+    enabled: Boolean(activeNickname),
+    staleTime: 5 * 60 * 1000, // 5분간 데이터를 fresh로 유지 (재요청 방지)
+    gcTime: 30 * 60 * 1000, // 30분간 캐시 유지
   });
 
   // 페이지 저장 기능
@@ -1134,7 +1137,7 @@ function RecapContent() {
         {/* Navigation */}
         <header className="mb-12 flex items-center justify-between">
           <button
-            onClick={() => router.push("../")}
+            onClick={() => router.push("/recap")}
             className="flex items-center gap-2 text-grey-600 hover:text-grey-900 transition-colors"
           >
             <ArrowLeft size={24} />
