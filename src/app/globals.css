@@ -1,0 +1,72 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-body: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+
+  /* Custom Color Palette */
+  --grey-50: #f9fafb;
+  --grey-100: #f2f4f6;
+  /* Background */
+  --grey-200: #e5e8eb;
+  --grey-300: #d1d6db;
+  --grey-400: #b0b8c1;
+  --grey-500: #8b95a1;
+  /* Subtext */
+  --grey-600: #6b7684;
+  --grey-700: #4e5968;
+  --grey-800: #333d4b;
+  /* Secondary Text */
+  --grey-900: #191f28;
+  /* Primary Text */
+
+  --brand: #3182f6;
+  /* Primary Action */
+  --brand-light: #e8f3ff;
+}
+
+body {
+  background-color: var(--grey-100);
+  color: var(--grey-900);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
+
+@layer components {
+
+  /* Glass Card */
+  .glass-card {
+    @apply rounded-3xl border border-white/60 bg-white/70 px-6 py-6 backdrop-blur-xl transition-all duration-300 hover:shadow-lg hover:-translate-y-1;
+    box-shadow: 0 0 24px rgba(0, 0, 0, 0.04);
+  }
+
+  /* Solid Card (Cleaner) */
+  .ui-card {
+    @apply rounded-[24px] bg-white px-6 py-6 transition-all duration-300;
+    box-shadow: 0 0 16px rgba(0, 0, 50, 0.02);
+  }
+
+  .ui-card:hover {
+    box-shadow: 0 0 20px rgba(0, 0, 50, 0.04);
+  }
+
+  .section-title {
+    @apply text-[22px] font-bold text-gray-900 mb-4;
+  }
+
+  .ui-input {
+    @apply w-full rounded-2xl border-none bg-grey-100 px-5 py-4 text-lg font-medium text-grey-900 transition-all placeholder:text-grey-500 hover:bg-grey-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand/20;
+    background-color: var(--grey-100);
+  }
+
+  .ui-btn {
+    @apply inline-flex items-center justify-center rounded-2xl bg-brand px-6 py-4 text-lg font-bold text-white transition-all hover:bg-[#1b64da] active:scale-95 disabled:bg-grey-300 disabled:cursor-not-allowed;
+    background-color: var(--brand);
+  }
+
+  .chip-blue {
+    @apply inline-flex items-center rounded-full bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-600;
+  }
+}
