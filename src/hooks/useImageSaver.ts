@@ -3,6 +3,10 @@
 import { useState, useRef, useCallback, RefObject } from "react";
 import * as htmlToImage from "html-to-image";
 
+// 프록시 환경에서도 올바른 API URL을 사용하도록 assetPrefix 설정
+const API_BASE_URL =
+  process.env.NODE_ENV === "production" ? "https://dm-recap.vercel.app" : "";
+
 // 비디오 대체 정보 타입
 type VideoReplacement = {
   video: HTMLVideoElement;
@@ -156,8 +160,8 @@ export function useImageSaver() {
         }
 
         try {
-          // 프록시를 통해 이미지 가져오기
-          const proxyUrl = `/api/image-proxy?url=${encodeURIComponent(
+          // 프록시를 통해 이미지 가져오기 (프록시 환경에서도 올바른 URL 사용)
+          const proxyUrl = `${API_BASE_URL}/api/image-proxy?url=${encodeURIComponent(
             originalSrc
           )}`;
           const response = await fetch(proxyUrl);
