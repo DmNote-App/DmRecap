@@ -46,6 +46,12 @@ function TierVideoList({
   const isInViewRef = useRef(false);
 
   const tierConfigs = useMemo(() => {
+    // 프록시 환경에서도 비디오가 정상 작동하도록 assetPrefix 사용
+    const assetPrefix =
+      process.env.NODE_ENV === "production"
+        ? "https://dm-recap.vercel.app"
+        : "";
+
     return BUTTONS.map((button) => {
       const tierData = tiers[button];
       let videoPath: string | null = null;
@@ -66,7 +72,7 @@ function TierVideoList({
         ];
         const match = tiersList.find((t) => lower.startsWith(t));
         if (match) {
-          videoPath = `/assets/tier/${match}.mp4`;
+          videoPath = `${assetPrefix}/assets/tier/${match}.mp4`;
         } else {
           if (lower.includes("beginner")) isBeginner = true;
           if (lower.includes("amateur")) isAmateur = true;
@@ -283,7 +289,6 @@ function TierVideoList({
                   playsInline
                   autoPlay
                   preload="auto"
-                  crossOrigin="anonymous"
                   onCanPlay={() => handleCanPlay(button)}
                   onContextMenu={(e) => e.preventDefault()}
                   className="h-full w-full object-cover"
