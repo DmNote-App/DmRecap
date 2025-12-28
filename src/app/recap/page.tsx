@@ -337,7 +337,7 @@ function TopList({
   tiers: Record<number, TierResponse | null | undefined>;
 }) {
   return (
-    <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
+    <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
       {BUTTONS.map((button) => {
         const tierData = tiers[button];
         const topList = tierData?.topList?.slice(0, 5) ?? [];
@@ -345,9 +345,9 @@ function TopList({
         return (
           <div
             key={button}
-            className="flex h-[486px] flex-col rounded-2xl bg-grey-50 p-5 transition-colors hover:bg-grey-100"
+            className="flex flex-col rounded-2xl bg-grey-50 p-5 transition-colors hover:bg-grey-100"
           >
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex flex-wrap items-center justify-between gap-y-2 mb-4">
               <h3 className="text-lg font-bold text-grey-900 flex items-center gap-2">
                 <span className="text-brand">{button}B</span> TOP 5
               </h3>
@@ -1043,13 +1043,13 @@ function RecapSkeleton() {
             <h2 className="section-title">
               <Skeleton width={90} />
             </h2>
-            <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
               {Array.from({ length: 4 }).map((_, i) => (
                 <div
                   key={i}
-                  className="flex h-[486px] flex-col rounded-2xl bg-grey-50 p-5"
+                  className="flex flex-col rounded-2xl bg-grey-50 p-5"
                 >
-                  <div className="flex items-center justify-between mb-4">
+                  <div className="flex flex-wrap items-center justify-between gap-y-2 mb-4">
                     <h3 className="text-lg font-bold text-grey-900 flex items-center gap-2">
                       <Skeleton width={85} />
                     </h3>
