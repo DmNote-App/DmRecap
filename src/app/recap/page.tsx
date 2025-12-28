@@ -289,6 +289,7 @@ function TierVideoList({
                   playsInline
                   autoPlay
                   preload="auto"
+                  crossOrigin="anonymous"
                   onCanPlay={() => handleCanPlay(button)}
                   onContextMenu={(e) => e.preventDefault()}
                   className="h-full w-full object-cover"
