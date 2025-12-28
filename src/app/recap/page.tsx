@@ -9,8 +9,16 @@ import "react-loading-skeleton/dist/skeleton.css";
 import MetricCard from "@/components/MetricCard";
 import TierCard from "@/components/TierCard";
 import { useNicknameStore } from "@/store/useNicknameStore";
-import { ArrowLeft, RefreshCcw, Disc, Sprout, Gamepad2 } from "lucide-react";
+import {
+  ArrowLeft,
+  RefreshCcw,
+  Disc,
+  Sprout,
+  Gamepad2,
+  Download,
+} from "lucide-react";
 import Tooltip from "@/components/Tooltip";
+import * as htmlToImage from "html-to-image";
 import {
   BUTTONS,
   VArchiveError,
@@ -1100,8 +1108,119 @@ function RecapContent() {
     enabled: Boolean(activeNickname),
   });
 
+  // 페이지 저장 기능
+  const [isSaving, setIsSaving] = useState(false);
+  const mainRef = useRef<HTMLElement>(null);
+
+  // 이미지를 프록시를 통해 base64로 변환하는 함수
+  const convertExternalImages = async (
+    element: HTMLElement
+  ): Promise<Map<HTMLImageElement, string>> => {
+    const originalSrcs = new Map<HTMLImageElement, string>();
+    const images = element.querySelectorAll("img");
+
+    const promises = Array.from(images).map(async (img) => {
+      if (
+        !img.src ||
+        img.src.startsWith("data:") ||
+        img.src.startsWith(window.location.origin)
+      ) {
+        return;
+      }
+
+      // 원본 src 저장
+      originalSrcs.set(img, img.src);
+
+      try {
+        // 프록시를 통해 이미지 가져오기
+        const proxyUrl = `/api/image-proxy?url=${encodeURIComponent(img.src)}`;
+        const response = await fetch(proxyUrl);
+
+        if (!response.ok) throw new Error("Proxy failed");
+
+        const blob = await response.blob();
+        const reader = new FileReader();
+
+        await new Promise<void>((resolve, reject) => {
+          reader.onloadend = () => {
+            if (typeof reader.result === "string") {
+              img.src = reader.result;
+            }
+            resolve();
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(blob);
+        });
+      } catch (e) {
+        console.warn("이미지 변환 실패:", img.src);
+        // 실패시 회색 placeholder로 대체
+        img.src =
+          "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAiIGhlaWdodD0iODAiIHZpZXdCb3g9IjAgMCA4MCA4MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iODAiIGhlaWdodD0iODAiIGZpbGw9IiNFNUU4RUIiLz48L3N2Zz4=";
+      }
+    });
+
+    await Promise.all(promises);
+    return originalSrcs;
+  };
+
+  // 이미지 원본 복원 함수
+  const restoreOriginalImages = (
+    originalSrcs: Map<HTMLImageElement, string>
+  ) => {
+    originalSrcs.forEach((src, img) => {
+      img.src = src;
+    });
+  };
+
+  const handleSaveAsImage = async () => {
+    if (!mainRef.current || isSaving) return;
+
+    setIsSaving(true);
+    let originalSrcs: Map<HTMLImageElement, string> | null = null;
+
+    try {
+      // 페이지 스크롤을 맨 위로 이동
+      window.scrollTo(0, 0);
+
+      // 외부 이미지를 base64로 변환
+      originalSrcs = await convertExternalImages(mainRef.current);
+
+      // 렌더링 완료 대기
+      await new Promise((resolve) => setTimeout(resolve, 200));
+
+      // html-to-image를 사용하여 PNG로 변환
+      const dataUrl = await htmlToImage.toPng(mainRef.current, {
+        quality: 1.0,
+        pixelRatio: 2,
+        backgroundColor: "#f2f4f6",
+        skipFonts: true,
+      });
+
+      // 다운로드 링크 생성
+      const link = document.createElement("a");
+      const fileName = `${activeNickname}_2025_recap_${
+        new Date().toISOString().split("T")[0]
+      }.png`;
+
+      link.href = dataUrl;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error("이미지 저장 중 오류가 발생했습니다:", error);
+      alert("이미지 저장에 실패했습니다. 다시 시도해주세요.");
+    } finally {
+      // 원본 이미지 복원
+      if (originalSrcs) {
+        restoreOriginalImages(originalSrcs);
+      }
+      setIsSaving(false);
+    }
+  };
+
   return (
-    <main className="min-h-screen w-full bg-[#f2f4f6] pt-10">
+    <main ref={mainRef} className="min-h-screen w-full bg-[#f2f4f6] pt-10">
       <div className="mx-auto max-w-5xl px-6">
         {/* Navigation */}
         <header className="mb-12 flex items-center justify-between">
@@ -1112,7 +1231,17 @@ function RecapContent() {
             <ArrowLeft size={24} />
             <span className="text-lg font-bold">홈으로</span>
           </button>
-          <div className="chip-blue">2025 RECAP</div>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleSaveAsImage}
+              disabled={isSaving || isLoading}
+              className="flex items-center gap-2 px-4 py-2 rounded-full bg-brand text-white font-bold text-sm hover:bg-[#1b64da] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Download size={18} />
+              <span>{isSaving ? "저장 중..." : "저장"}</span>
+            </button>
+            <div className="chip-blue">2025 RECAP</div>
+          </div>
         </header>
 
         {/* Header */}
