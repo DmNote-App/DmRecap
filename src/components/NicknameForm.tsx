@@ -39,13 +39,15 @@ export default function NicknameForm({
           <Search size={20} />
         </div>
         <input
-          className={`w-full rounded-2xl border bg-white px-6 py-3.5 pl-12 text-lg font-bold text-grey-900 transition-colors placeholder:text-grey-400 focus:outline-none focus:ring-1 ${errorMessage
-              ? "border-red-400 focus:border-red-500 focus:ring-red-500"
-              : "border-grey-200 focus:border-brand focus:ring-brand"
+          className={`w-full rounded-2xl border bg-white px-6 py-3.5 pl-12 text-lg font-semibold text-grey-900 transition-colors placeholder:text-grey-400 focus:outline-none focus:ring-1 ${errorMessage
+            ? "border-red-400 focus:border-red-500 focus:ring-red-500"
+            : "border-grey-200 focus:border-brand focus:ring-brand"
             }`}
           value={value}
           onChange={(event) => setValue(event.target.value)}
           placeholder="닉네임 입력"
+          spellCheck={false}
+          autoComplete="off"
         />
       </div>
 

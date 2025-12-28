@@ -6,7 +6,7 @@ export default function KeyViewerBanner() {
             href="https://dmnote.app"
             target="_blank"
             rel="noopener noreferrer"
-            className="group relative flex w-full items-center justify-between overflow-hidden rounded-[24px] bg-white px-6 py-5 transition-all hover:bg-[#fcfcfc] active:scale-[0.99]"
+            className="group relative flex w-full items-center justify-between overflow-hidden rounded-2xl bg-white px-6 py-5 transition-all hover:bg-[#fcfcfc] active:scale-[0.99]"
         >
             <div className="flex items-center gap-4">
                 {/* Placeholder Icon / Logo Area */}
