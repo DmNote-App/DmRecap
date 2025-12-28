@@ -6,8 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import Skeleton, { SkeletonTheme } from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
-import MetricCard from "@/components/MetricCard";
-import TierCard from "@/components/TierCard";
+
 import { useNicknameStore } from "@/store/useNicknameStore";
 import {
   ArrowLeft,
@@ -18,6 +17,7 @@ import {
   Download,
 } from "lucide-react";
 import Tooltip from "@/components/Tooltip";
+import NicknameForm from "@/components/NicknameForm";
 import { useImageSaver } from "@/hooks/useImageSaver";
 import {
   BUTTONS,
@@ -182,7 +182,7 @@ function TierVideoList({
         await new Promise(requestAnimationFrame);
 
         const playPromises = videos.map((video) =>
-          video.play().catch(() => {})
+          video.play().catch(() => { })
         );
         await Promise.all(playPromises);
 
@@ -232,7 +232,7 @@ function TierVideoList({
       }
     });
 
-    const playPromises = videos.map((video) => video.play().catch(() => {}));
+    const playPromises = videos.map((video) => video.play().catch(() => { }));
     Promise.all(playPromises).then(() => {
       const syncedTime = videos[0]?.currentTime ?? 0;
       videos.forEach((video) => {
@@ -368,15 +368,14 @@ function TopList({
                     <span
                       className={`
                       flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold
-                      ${
-                        index === 0
+                      ${index === 0
                           ? "bg-yellow-100 text-yellow-700"
                           : index === 1
-                          ? "bg-gray-100 text-gray-700"
-                          : index === 2
-                          ? "bg-orange-100 text-orange-700"
-                          : "bg-grey-100 text-grey-500"
-                      }
+                            ? "bg-gray-100 text-gray-700"
+                            : index === 2
+                              ? "bg-orange-100 text-orange-700"
+                              : "bg-grey-100 text-grey-500"
+                        }
                     `}
                     >
                       {index + 1}
@@ -397,11 +396,10 @@ function TopList({
                         <span
                           className={`
                           px-1.5 py-0.5 rounded text-[10px] font-bold tracking-tight
-                          ${
-                            item.pattern.startsWith("SC")
+                          ${item.pattern.startsWith("SC")
                               ? "bg-purple-50 text-purple-600"
                               : "bg-grey-100 text-grey-600"
-                          }
+                            }
                         `}
                         >
                           {item.pattern}
@@ -599,13 +597,12 @@ function PlayStyleLineChart({
 
             {/* Data Point Dot */}
             <motion.circle
-              initial={{ scale: 0 }}
-              whileInView={{ scale: 1 }}
+              initial={{ opacity: 0, r: 0 }}
+              whileInView={{ opacity: 1, r: 5 }}
               viewport={{ once: true }}
-              transition={{ delay: 0.5 + i * 0.1, type: "spring" }}
+              transition={{ delay: 0.5 + i * 0.1, duration: 0.3, ease: "easeOut" }}
               cx={p.x}
               cy={p.y}
-              r={5}
               fill="white"
               stroke="#3182f6"
               strokeWidth="2.5"
@@ -1127,9 +1124,8 @@ function RecapContent() {
   const { isSaving, saveAsImage } = useImageSaver();
 
   const handleSaveAsImage = () => {
-    const fileName = `${activeNickname}_2025_recap_${
-      new Date().toISOString().split("T")[0]
-    }.png`;
+    const fileName = `${activeNickname}_2025_recap_${new Date().toISOString().split("T")[0]
+      }.png`;
     saveAsImage(mainRef, {
       fileName,
       backgroundColor: "#f2f4f6",
@@ -1158,7 +1154,6 @@ function RecapContent() {
               <Download size={18} />
               <span>{isSaving ? "저장 중..." : "저장"}</span>
             </button>
-            <div className="chip-blue">2025 RECAP</div>
           </div>
         </header>
 
@@ -1216,15 +1211,13 @@ function RecapContent() {
         <div className="flex flex-col gap-4">
           {isLoading && <RecapSkeleton />}
 
-          {isError && (
+          {isError && !(error instanceof VArchiveError && error.code === 101) && (
             <div className="glass-card flex flex-col items-center text-center p-12">
               <p className="text-xl font-bold text-grey-800">
                 기록을 불러오지 못했어요
               </p>
               <p className="mt-2 text-grey-500">
-                {error instanceof VArchiveError && error.code === 101
-                  ? "닉네임을 찾을 수 없습니다. 정확한 닉네임인지 확인해주세요."
-                  : "잠시 후 다시 시도해주시겠어요?"}
+                잠시 후 다시 시도해주시겠어요?
               </p>
               <button
                 onClick={() => refetch()}
@@ -1336,11 +1329,10 @@ function RecapContent() {
                               <span
                                 className={`
                                 px-1.5 py-0.5 rounded text-[10px] font-bold tracking-tight
-                                ${
-                                  entry.pattern.startsWith("SC")
+                                ${entry.pattern.startsWith("SC")
                                     ? "bg-purple-50 text-purple-600"
                                     : "bg-grey-100 text-grey-600"
-                                }
+                                  }
                               `}
                               >
                                 {entry.pattern}

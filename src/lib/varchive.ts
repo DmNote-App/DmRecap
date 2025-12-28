@@ -241,3 +241,31 @@ export async function fetchRecapData(
     totalClearedPatterns
   };
 }
+
+/**
+ * 닉네임이 V-Archive에 존재하는지 빠르게 확인합니다.
+ * 4버튼 티어 API를 호출해서 확인합니다.
+ */
+export async function checkNicknameExists(nickname: string): Promise<boolean> {
+  try {
+    await api.get(
+      `/api/archive/${encodeURIComponent(nickname)}/tier/4`,
+      { headers: jsonHeaders }
+    );
+    return true;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      const code = (error.response?.data as { errorCode?: number } | undefined)
+        ?.errorCode;
+      if (code === 101) {
+        return false;
+      }
+      // code 111은 티어가 없는 경우로, 닉네임은 존재함
+      if (code === 111) {
+        return true;
+      }
+    }
+    // 다른 에러의 경우 일단 통과시킴
+    return true;
+  }
+}

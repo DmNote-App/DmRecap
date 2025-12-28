@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface TooltipProps {
@@ -10,13 +10,60 @@ interface TooltipProps {
 
 export default function Tooltip({ content, children }: TooltipProps) {
     const [isVisible, setIsVisible] = useState(false);
+    const [isTouchDevice, setIsTouchDevice] = useState(false);
+    const tooltipRef = useRef<HTMLDivElement>(null);
+
+    // 터치 기기 감지
+    useEffect(() => {
+        setIsTouchDevice('ontouchstart' in window || navigator.maxTouchPoints > 0);
+    }, []);
+
+    // 외부 클릭/터치 시 툴팁 닫기
+    const handleClickOutside = useCallback((event: MouseEvent | TouchEvent) => {
+        if (tooltipRef.current && !tooltipRef.current.contains(event.target as Node)) {
+            setIsVisible(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        if (isVisible && isTouchDevice) {
+            document.addEventListener('touchstart', handleClickOutside);
+            document.addEventListener('click', handleClickOutside);
+            return () => {
+                document.removeEventListener('touchstart', handleClickOutside);
+                document.removeEventListener('click', handleClickOutside);
+            };
+        }
+    }, [isVisible, isTouchDevice, handleClickOutside]);
+
+    // 터치 기기에서는 hover 무시, 클릭으로만 토글
+    const handleMouseEnter = () => {
+        if (!isTouchDevice) {
+            setIsVisible(true);
+        }
+    };
+
+    const handleMouseLeave = () => {
+        if (!isTouchDevice) {
+            setIsVisible(false);
+        }
+    };
+
+    const handleClick = (e: React.MouseEvent) => {
+        if (isTouchDevice) {
+            e.preventDefault();
+            e.stopPropagation();
+            setIsVisible(!isVisible);
+        }
+    };
 
     return (
         <div
+            ref={tooltipRef}
             className="relative inline-flex"
-            onMouseEnter={() => setIsVisible(true)}
-            onMouseLeave={() => setIsVisible(false)}
-            onClick={() => setIsVisible(!isVisible)}
+            onMouseEnter={handleMouseEnter}
+            onMouseLeave={handleMouseLeave}
+            onClick={handleClick}
         >
             {children}
             <AnimatePresence>

@@ -181,7 +181,7 @@ export function useImageSaver() {
           // 캐시에 저장
           imageCache.current.set(originalSrc, dataUrl);
           img.src = dataUrl;
-        } catch (e) {
+        } catch {
           console.warn("이미지 변환 실패:", originalSrc);
           // 실패시 회색 placeholder로 대체
           imageCache.current.set(originalSrc, IMAGE_PLACEHOLDER);

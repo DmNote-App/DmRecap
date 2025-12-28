@@ -1,16 +1,42 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 import NicknameForm from "@/components/NicknameForm";
 import { useNicknameStore } from "@/store/useNicknameStore";
+import { checkNicknameExists } from "@/lib/varchive";
 
 export default function HomePage() {
   const router = useRouter();
   const { nickname, setNickname } = useNicknameStore();
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isChecking, setIsChecking] = useState(false);
+
+  const handleSubmit = async (value: string) => {
+    setErrorMessage(null);
+    setIsChecking(true);
+
+    try {
+      const exists = await checkNicknameExists(value);
+      if (exists) {
+        setNickname(value);
+        router.push(`recap?nickname=${encodeURIComponent(value)}`);
+        // 성공 시에는 isChecking을 true로 유지 (페이지 이동됨)
+      } else {
+        setErrorMessage("닉네임을 다시 확인해주세요.");
+        setIsChecking(false); // 에러일 때만 버튼 되돌리기
+      }
+    } catch {
+      // API 에러가 발생해도 일단 이동 (recap 페이지에서 다시 시도)
+      setNickname(value);
+      router.push(`recap?nickname=${encodeURIComponent(value)}`);
+      // 이동하므로 isChecking 유지
+    }
+  };
 
   return (
-    <main className="relative flex min-h-screen w-full flex-col items-center justify-center overflow-hidden px-6 py-20">
+    <main className="relative flex h-screen h-[100dvh] w-full flex-col items-center justify-center overflow-hidden px-6">
       {/* Background Blobs (Glass Effect) */}
       <div className="absolute inset-0 pointer-events-none -z-10 bg-[#f2f4f6]">
         <div className="absolute -top-[10%] -left-[10%] w-[50vw] h-[50vw] bg-blue-200/40 rounded-full blur-[120px]" />
@@ -33,12 +59,10 @@ export default function HomePage() {
         <div className="w-full">
           <NicknameForm
             defaultNickname={nickname}
-            onSubmit={(value) => {
-              setNickname(value);
-              router.push(`recap?nickname=${encodeURIComponent(value)}`);
-            }}
-            buttonLabel="리캡 시작하기"
+            onSubmit={handleSubmit}
+            buttonLabel={isChecking ? "확인 중..." : "리캡 시작하기"}
             helperText="V-ARCHIVE에 등록된 닉네임으로 조회됩니다."
+            errorMessage={errorMessage ?? undefined}
           />
         </div>
       </div>
@@ -54,3 +78,4 @@ export default function HomePage() {
     </main>
   );
 }
+

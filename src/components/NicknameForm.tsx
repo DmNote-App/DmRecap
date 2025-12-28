@@ -1,20 +1,22 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Search } from "lucide-react";
+import { Search, AlertCircle } from "lucide-react";
 
 type NicknameFormProps = {
   defaultNickname: string;
   onSubmit: (nickname: string) => void;
   buttonLabel?: string;
   helperText?: string;
+  errorMessage?: string;
 };
 
 export default function NicknameForm({
   defaultNickname,
   onSubmit,
   buttonLabel = "조회하기",
-  helperText
+  helperText,
+  errorMessage
 }: NicknameFormProps) {
   const [value, setValue] = useState(defaultNickname);
 
@@ -37,13 +39,22 @@ export default function NicknameForm({
           <Search size={20} />
         </div>
         <input
-          className="w-full rounded-2xl border border-grey-200 bg-white px-6 py-3.5 pl-12 text-lg font-bold text-grey-900 transition-all placeholder:text-grey-400 focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand"
+          className={`w-full rounded-2xl border bg-white px-6 py-3.5 pl-12 text-lg font-bold text-grey-900 transition-colors placeholder:text-grey-400 focus:outline-none focus:ring-1 ${errorMessage
+              ? "border-red-400 focus:border-red-500 focus:ring-red-500"
+              : "border-grey-200 focus:border-brand focus:ring-brand"
+            }`}
           value={value}
           onChange={(event) => setValue(event.target.value)}
           placeholder="닉네임 입력"
-
         />
       </div>
+
+      {errorMessage && (
+        <div className="flex items-center gap-2 text-red-500 mt-1">
+          <AlertCircle size={16} className="shrink-0" />
+          <span className="text-sm font-medium">{errorMessage}</span>
+        </div>
+      )}
 
       <button
         type="submit"
