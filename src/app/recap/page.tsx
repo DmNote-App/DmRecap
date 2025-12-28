@@ -1106,11 +1106,15 @@ function RecapContent() {
     queryKey: ["recap", activeNickname, rangeLabel],
     queryFn: () => fetchRecapData(activeNickname, rangeStart),
     enabled: Boolean(activeNickname),
+    staleTime: 5 * 60 * 1000, // 5분간 데이터를 fresh로 유지 (재요청 방지)
+    gcTime: 30 * 60 * 1000, // 30분간 캐시 유지
   });
 
   // 페이지 저장 기능
   const [isSaving, setIsSaving] = useState(false);
   const mainRef = useRef<HTMLElement>(null);
+  // 이미지 base64 캐시 (중복 요청 방지)
+  const imageCache = useRef<Map<string, string>>(new Map());
 
   // 이미지를 프록시를 통해 base64로 변환하는 함수
   const convertExternalImages = async (
@@ -1129,11 +1133,21 @@ function RecapContent() {
       }
 
       // 원본 src 저장
-      originalSrcs.set(img, img.src);
+      const originalSrc = img.src;
+      originalSrcs.set(img, originalSrc);
+
+      // 캐시에 있으면 재사용 (중복 API 요청 방지)
+      const cached = imageCache.current.get(originalSrc);
+      if (cached) {
+        img.src = cached;
+        return;
+      }
 
       try {
         // 프록시를 통해 이미지 가져오기
-        const proxyUrl = `/api/image-proxy?url=${encodeURIComponent(img.src)}`;
+        const proxyUrl = `/api/image-proxy?url=${encodeURIComponent(
+          originalSrc
+        )}`;
         const response = await fetch(proxyUrl);
 
         if (!response.ok) throw new Error("Proxy failed");
@@ -1144,6 +1158,8 @@ function RecapContent() {
         await new Promise<void>((resolve, reject) => {
           reader.onloadend = () => {
             if (typeof reader.result === "string") {
+              // 캐시에 저장
+              imageCache.current.set(originalSrc, reader.result);
               img.src = reader.result;
             }
             resolve();
@@ -1152,10 +1168,12 @@ function RecapContent() {
           reader.readAsDataURL(blob);
         });
       } catch (e) {
-        console.warn("이미지 변환 실패:", img.src);
+        console.warn("이미지 변환 실패:", originalSrc);
         // 실패시 회색 placeholder로 대체
-        img.src =
+        const placeholder =
           "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAiIGhlaWdodD0iODAiIHZpZXdCb3g9IjAgMCA4MCA4MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iODAiIGhlaWdodD0iODAiIGZpbGw9IiNFNUU4RUIiLz48L3N2Zz4=";
+        imageCache.current.set(originalSrc, placeholder);
+        img.src = placeholder;
       }
     });
 

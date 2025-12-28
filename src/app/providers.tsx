@@ -31,9 +31,12 @@ export default function Providers({ children }: { children: ReactNode }) {
         defaultOptions: {
           queries: {
             refetchOnWindowFocus: false,
-            retry: 1
-          }
-        }
+            refetchOnMount: false, // 이미 캐시된 데이터가 있으면 재요청 안함
+            retry: 1,
+            staleTime: 5 * 60 * 1000, // 5분간 fresh 상태 유지
+            gcTime: 30 * 60 * 1000, // 30분간 캐시 유지
+          },
+        },
       })
   );
   const pathname = usePathname();
@@ -71,5 +74,7 @@ export default function Providers({ children }: { children: ReactNode }) {
     };
   }, [pathname, prefersReducedMotion]);
 
-  return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
+  return (
+    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+  );
 }
