@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useMemo, useState, useRef } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
@@ -103,14 +103,14 @@ function TierVideoList({
     return () => observer.disconnect();
   }, []);
 
-  const stopSync = () => {
+  const stopSync = useCallback(() => {
     if (syncIntervalId.current !== null) {
       window.clearInterval(syncIntervalId.current);
       syncIntervalId.current = null;
     }
-  };
+  }, []);
 
-  const syncVideos = () => {
+  const syncVideos = useCallback(() => {
     if (!isInViewRef.current) {
       return;
     }
@@ -137,15 +137,15 @@ function TierVideoList({
         video.currentTime = masterTime;
       }
     }
-  };
+  }, [videoRefs]);
 
-  const startSync = () => {
+  const startSync = useCallback(() => {
     if (syncIntervalId.current !== null) return;
     syncVideos();
     syncIntervalId.current = window.setInterval(syncVideos, 250);
-  };
+  }, [syncVideos]);
 
-  const seekTo = (video: HTMLVideoElement, targetTime: number) => {
+  const seekTo = useCallback((video: HTMLVideoElement, targetTime: number) => {
     return new Promise<void>((resolve) => {
       const isAtTarget = Math.abs(video.currentTime - targetTime) < 0.001;
       if (isAtTarget) {
@@ -157,7 +157,7 @@ function TierVideoList({
       video.addEventListener("seeked", handleSeeked, { once: true });
       video.currentTime = targetTime;
     });
-  };
+  }, []);
 
   // Synchronized playback start
   useEffect(() => {
@@ -201,7 +201,7 @@ function TierVideoList({
 
       void startPlayback();
     }
-  }, [readyCount, videoCount, isInView]);
+  }, [isInView, readyCount, seekTo, startSync, videoCount, videoRefs]);
 
   useEffect(() => {
     const videos = Object.values(videoRefs.current).filter(Boolean);
@@ -242,14 +242,14 @@ function TierVideoList({
     });
 
     startSync();
-  }, [isInView]);
+  }, [isInView, startSync, stopSync, videoRefs]);
 
   // Cleanup sync on unmount
   useEffect(() => {
     return () => {
       stopSync();
     };
-  }, []);
+  }, [stopSync]);
 
   // Use canplay to ensure the first frame is decodable without waiting for full buffer
   const handleCanPlay = (button: number) => {
@@ -379,6 +379,7 @@ function TopList({
                     >
                       {index + 1}
                     </span>
+                    {/* eslint-disable-next-line @next/next/no-img-element -- keep <img> so capture includes jackets reliably */}
                     <img
                       src={`https://v-archive.net/static/images/jackets/${item.title}.jpg`}
                       alt={item.name}
@@ -427,6 +428,7 @@ function TopList({
 }
 
 const RANGE_START_ISO = "2025-01-01T00:00:00+09:00";
+const RANGE_END_ISO = "2026-01-01T00:00:00+09:00";
 
 function formatScore(value: number) {
   return new Intl.NumberFormat("ko-KR", {
@@ -447,8 +449,10 @@ function formatPercent(value: number) {
 
 function PlayStyleLineChart({
   stats,
+  captureMode = false,
 }: {
   stats: { buttonRatios: Record<number, number> };
+  captureMode?: boolean;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(300);
@@ -554,29 +558,45 @@ function PlayStyleLineChart({
         })}
 
         {/* Area Fill */}
-        <motion.path
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.8 }}
-          d={fillPathData}
-          fill="url(#lineGradient)"
-        />
+        {captureMode ? (
+          <path d={fillPathData} fill="url(#lineGradient)" />
+        ) : (
+          <motion.path
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8 }}
+            d={fillPathData}
+            fill="url(#lineGradient)"
+          />
+        )}
 
         {/* Line Path */}
-        <motion.path
-          initial={{ pathLength: 0 }}
-          whileInView={{ pathLength: 1 }}
-          viewport={{ once: true }}
-          transition={{ duration: 1, ease: "easeInOut" }}
-          d={pathData}
-          fill="none"
-          stroke="#3182f6"
-          strokeWidth="3"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          filter="url(#lineGlow)"
-        />
+        {captureMode ? (
+          <path
+            d={pathData}
+            fill="none"
+            stroke="#3182f6"
+            strokeWidth="3"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            filter="url(#lineGlow)"
+          />
+        ) : (
+          <motion.path
+            initial={{ pathLength: 0 }}
+            whileInView={{ pathLength: 1 }}
+            viewport={{ once: true }}
+            transition={{ duration: 1, ease: "easeInOut" }}
+            d={pathData}
+            fill="none"
+            stroke="#3182f6"
+            strokeWidth="3"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            filter="url(#lineGlow)"
+          />
+        )}
 
         {/* Points and Labels */}
         {points.map((p, i) => (
@@ -598,17 +618,32 @@ function PlayStyleLineChart({
             </text>
 
             {/* Data Point Dot */}
-            <motion.circle
-              initial={{ opacity: 0, r: 0 }}
-              whileInView={{ opacity: 1, r: 5 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.5 + i * 0.1, duration: 0.3, ease: "easeOut" }}
-              cx={p.x}
-              cy={p.y}
-              fill="white"
-              stroke="#3182f6"
-              strokeWidth="2.5"
-            />
+            {captureMode ? (
+              <circle
+                cx={p.x}
+                cy={p.y}
+                r={5}
+                fill="white"
+                stroke="#3182f6"
+                strokeWidth="2.5"
+              />
+            ) : (
+              <motion.circle
+                initial={{ opacity: 0, r: 0 }}
+                whileInView={{ opacity: 1, r: 5 }}
+                viewport={{ once: true }}
+                transition={{
+                  delay: 0.5 + i * 0.1,
+                  duration: 0.3,
+                  ease: "easeOut",
+                }}
+                cx={p.x}
+                cy={p.y}
+                fill="white"
+                stroke="#3182f6"
+                strokeWidth="2.5"
+              />
+            )}
           </g>
         ))}
       </svg>
@@ -1111,11 +1146,12 @@ function RecapContent() {
   }, [nicknameParam, nickname, setNickname]);
 
   const rangeStart = useMemo(() => new Date(RANGE_START_ISO), []);
+  const rangeEnd = useMemo(() => new Date(RANGE_END_ISO), []);
   const rangeLabel = "2025년";
 
   const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ["recap", activeNickname, rangeLabel],
-    queryFn: () => fetchRecapData(activeNickname, rangeStart),
+    queryFn: () => fetchRecapData(activeNickname, rangeStart, rangeEnd),
     enabled: Boolean(activeNickname),
     staleTime: 5 * 60 * 1000, // 5분간 데이터를 fresh로 유지 (재요청 방지)
     gcTime: 30 * 60 * 1000, // 30분간 캐시 유지
@@ -1124,6 +1160,7 @@ function RecapContent() {
   // 페이지 저장 기능
   const mainRef = useRef<HTMLElement>(null);
   const { isSaving, saveAsImage } = useImageSaver();
+  const [isCapturing, setIsCapturing] = useState(false);
 
   const handleSaveAsImage = () => {
     const fileName = `${activeNickname}_2025_recap_${new Date().toISOString().split("T")[0]
@@ -1132,252 +1169,281 @@ function RecapContent() {
       fileName,
       backgroundColor: "#f2f4f6",
       pixelRatio: 3,
+      onBeforeCapture: () => setIsCapturing(true),
+      onAfterCapture: () => setIsCapturing(false),
     });
   };
 
   return (
-    <main
-      ref={mainRef}
-      className="recap-root min-h-screen w-full bg-[#f2f4f6] pt-10"
-    >
-      <div className="recap-container mx-auto max-w-5xl px-6">
-        {/* Navigation */}
-        <header className="recap-header mb-12 flex items-center justify-between">
-          <button
-            onClick={() => router.push("/recap")}
-            className="flex items-center gap-2 text-grey-600 hover:text-grey-900 transition-colors"
-          >
-            <ArrowLeft size={24} />
-            <span className="text-lg font-bold">홈으로</span>
-          </button>
-          <div className="flex items-center gap-3">
+    <>
+      <main
+        ref={mainRef}
+        className="recap-root min-h-screen w-full bg-[#f2f4f6] pt-10"
+      >
+        <div className="recap-container mx-auto max-w-5xl px-0 md:px-6">
+          {/* Navigation */}
+          <header className="recap-header mb-12 flex items-center justify-between px-6 md:px-0">
             <button
-              onClick={handleSaveAsImage}
-              disabled={isSaving || isLoading}
-              className="flex items-center gap-2 px-4 py-2 rounded-full bg-brand text-white font-bold text-sm hover:bg-[#1b64da] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              onClick={() => router.push("/recap")}
+              className="flex items-center gap-2 text-grey-600 hover:text-grey-900 transition-colors"
             >
-              <Download size={18} />
-              <span>{isSaving ? "저장 중..." : "저장"}</span>
+              <ArrowLeft size={24} />
+              <span className="text-lg font-bold">홈으로</span>
             </button>
-          </div>
-        </header>
-
-        {/* Header */}
-        <div className="mb-4">
-          <h1 className="text-4xl font-bold text-grey-900 md:text-5xl leading-[1.1] md:leading-[1.1]">
-            {activeNickname}님의
-            <br />
-            <span className="text-brand">2025년 DJMAX</span>
-          </h1>
-          <p className="mt-4 text-grey-600">
-            올해 기록된 모든 플레이 데이터를 분석했어요.
-          </p>
-
-          {(isLoading || data) && (
-            <div className="mt-4 flex flex-wrap gap-2">
-              {isLoading ? (
-                <SkeletonTheme baseColor="#e2e4e8" highlightColor="#f2f4f6">
-                  {Array.from({ length: 3 }).map((_, i) => (
-                    <span
-                      key={i}
-                      className="inline-flex items-center px-3 py-1 rounded-full text-sm font-bold bg-grey-100/50"
-                    >
-                      <Skeleton
-                        width={i === 0 ? 80 : i === 1 ? 60 : 100}
-                        height={16}
-                        className="align-middle"
-                      />
-                    </span>
-                  ))}
-                </SkeletonTheme>
-              ) : (
-                calculateAchievements(data!).map((achievement) => (
-                  <Tooltip
-                    key={achievement.id}
-                    content={
-                      <span className="font-bold">
-                        {achievement.description}
-                      </span>
-                    }
-                  >
-                    <span
-                      className={`cursor-help inline-flex items-center px-3 py-1 rounded-full text-sm font-bold ${achievement.bgColor} ${achievement.color} transition-colors hover:brightness-95`}
-                    >
-                      {achievement.title}
-                    </span>
-                  </Tooltip>
-                ))
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* Content */}
-        <div className="flex flex-col gap-4">
-          {isLoading && <RecapSkeleton />}
-
-          {isError && !(error instanceof VArchiveError && error.code === 101) && (
-            <div className="glass-card flex flex-col items-center text-center p-12">
-              <p className="text-xl font-bold text-grey-800">
-                기록을 불러오지 못했어요
-              </p>
-              <p className="mt-2 text-grey-500">
-                잠시 후 다시 시도해주시겠어요?
-              </p>
+            <div className="flex items-center gap-3">
               <button
-                onClick={() => refetch()}
-                className="mt-6 flex items-center gap-2 rounded-full bg-grey-800 px-6 py-3 text-white transition-colors hover:bg-black"
+                onClick={handleSaveAsImage}
+                disabled={isSaving || isLoading}
+                className="flex items-center gap-2 px-4 py-2 rounded-full bg-brand text-white font-bold text-sm hover:bg-[#1b64da] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <RefreshCcw size={18} />
-                다시 시도
+                <Download size={18} />
+                <span>{isSaving ? "저장 중..." : "저장"}</span>
               </button>
             </div>
-          )}
+          </header>
 
-          {data && (
-            <>
-              <RecapGrid data={data} />
+          {/* Header */}
+          <div className="mb-4 px-6 md:px-0">
+            <h1 className="text-4xl font-bold text-grey-900 md:text-5xl leading-[1.1] md:leading-[1.1]">
+              {activeNickname}님의
+              <br />
+              <span className="text-brand">2025년 DJMAX</span>
+            </h1>
+            <p className="mt-4 text-grey-600">
+              올해 기록된 모든 플레이 데이터를 분석했어요.
+            </p>
 
-              <div className="grid gap-4 md:grid-cols-3">
-                <section className="ui-card flex flex-col h-full">
-                  <h2 className="section-title">플레이 스타일</h2>
-                  <div className="mt-4 flex flex-col gap-2">
-                    {BUTTONS.map((button) => {
-                      const ratio = data.stats.buttonRatios[button] ?? 0;
-                      const count = data.stats.buttonCounts[button] ?? 0;
-                      return (
-                        <div key={button} className="group">
-                          <div className="flex justify-between text-sm font-medium mb-1">
-                            <span className="text-grey-700">
-                              {button} BUTTON
-                            </span>
-                            <span className="text-grey-900">
-                              {formatPercent(ratio)}%
-                            </span>
+            {(isLoading || data) && (
+              <div className="mt-4 flex flex-wrap gap-2">
+                {isLoading ? (
+                  <SkeletonTheme baseColor="#e2e4e8" highlightColor="#f2f4f6">
+                    {Array.from({ length: 3 }).map((_, i) => (
+                      <span
+                        key={i}
+                        className="inline-flex items-center px-3 py-1 rounded-full text-sm font-bold bg-grey-100/50"
+                      >
+                        <Skeleton
+                          width={i === 0 ? 80 : i === 1 ? 60 : 100}
+                          height={16}
+                          className="align-middle"
+                        />
+                      </span>
+                    ))}
+                  </SkeletonTheme>
+                ) : (
+                  calculateAchievements(data!).map((achievement) => (
+                    <Tooltip
+                      key={achievement.id}
+                      content={
+                        <span className="font-bold">
+                          {achievement.description}
+                        </span>
+                      }
+                    >
+                      <span
+                        className={`cursor-help inline-flex items-center px-3 py-1 rounded-full text-sm font-bold ${achievement.bgColor} ${achievement.color} transition-colors hover:brightness-95`}
+                      >
+                        {achievement.title}
+                      </span>
+                    </Tooltip>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Content */}
+          <div className="flex flex-col gap-4">
+            {isLoading && <RecapSkeleton />}
+
+            {isError && !(error instanceof VArchiveError && error.code === 101) && (
+              <div className="glass-card flex flex-col items-center text-center p-12">
+                <p className="text-xl font-bold text-grey-800">
+                  기록을 불러오지 못했어요
+                </p>
+                <p className="mt-2 text-grey-500">
+                  잠시 후 다시 시도해주시겠어요?
+                </p>
+                <button
+                  onClick={() => refetch()}
+                  className="mt-6 flex items-center gap-2 rounded-full bg-grey-800 px-6 py-3 text-white transition-colors hover:bg-black"
+                >
+                  <RefreshCcw size={18} />
+                  다시 시도
+                </button>
+              </div>
+            )}
+
+            {data && (
+              <>
+                <RecapGrid data={data} />
+
+                <div className="grid gap-4 md:grid-cols-3">
+                  <section className="ui-card flex flex-col h-full">
+                    <h2 className="section-title">플레이 스타일</h2>
+                    <div className="mt-4 flex flex-col gap-2">
+                      {BUTTONS.map((button) => {
+                        const ratio = data.stats.buttonRatios[button] ?? 0;
+                        const count = data.stats.buttonCounts[button] ?? 0;
+                        return (
+                          <div key={button} className="group">
+                            <div className="flex justify-between text-sm font-medium mb-1">
+                              <span className="text-grey-700">
+                                {button} BUTTON
+                              </span>
+                              <span className="text-grey-900">
+                                {formatPercent(ratio)}%
+                              </span>
+                            </div>
+                            <div className="h-3 w-full rounded-full bg-grey-100 overflow-hidden">
+                              {isCapturing ? (
+                                <div
+                                  className="h-full rounded-full bg-brand"
+                                  style={{ width: `${Math.min(ratio, 100)}%` }}
+                                />
+                              ) : (
+                                <motion.div
+                                  initial={{ width: 0 }}
+                                  whileInView={{
+                                    width: `${Math.min(ratio, 100)}%`,
+                                  }}
+                                  viewport={{ once: true }}
+                                  transition={{ duration: 1, ease: "circOut" }}
+                                  className="h-full rounded-full bg-brand group-hover:bg-[#1b64da] transition-colors"
+                                />
+                              )}
+                            </div>
+                            <p className="mt-0.5 text-right text-xs font-medium text-grey-500">
+                              {formatCount(count)}개
+                            </p>
                           </div>
-                          <div className="h-3 w-full rounded-full bg-grey-100 overflow-hidden">
-                            <motion.div
-                              initial={{ width: 0 }}
-                              whileInView={{
-                                width: `${Math.min(ratio, 100)}%`,
-                              }}
-                              viewport={{ once: true }}
-                              transition={{ duration: 1, ease: "circOut" }}
-                              className="h-full rounded-full bg-brand group-hover:bg-[#1b64da] transition-colors"
-                            />
-                          </div>
-                          <p className="mt-0.5 text-right text-xs font-medium text-grey-500">
-                            {formatCount(count)}개
-                          </p>
-                        </div>
-                      );
-                    })}
-                  </div>
-                  <div className="flex-1 flex items-center justify-center mt-2 min-w-0 w-full">
-                    <PlayStyleLineChart stats={data.stats} />
-                  </div>
-                </section>
+                        );
+                      })}
+                    </div>
+                    <div className="flex-1 flex items-center justify-center mt-2 min-w-0 w-full">
+                      <PlayStyleLineChart
+                        stats={data.stats}
+                        captureMode={isCapturing}
+                      />
+                    </div>
+                  </section>
 
-                <section className="ui-card md:col-span-2">
-                  <h2 className="section-title">최고 DJ POWER 기록</h2>
-                  <div className="mt-6 grid grid-cols-1 gap-4">
-                    {BUTTONS.map((button) => {
-                      const entry = data.stats.topDjpowerByButton[button];
-                      if (!entry) {
+                  <section className="ui-card md:col-span-2">
+                    <h2 className="section-title">최고 DJ POWER 기록</h2>
+                    <div className="mt-6 grid grid-cols-1 gap-4">
+                      {BUTTONS.map((button) => {
+                        const entry = data.stats.topDjpowerByButton[button];
+                        if (!entry) {
+                          return (
+                            <div
+                              key={button}
+                              className="flex h-[117px] items-center gap-4 rounded-xl bg-grey-50 p-4"
+                            >
+                              <div className="flex h-20 w-20 shrink-0 flex-col items-center justify-center gap-1 rounded-lg bg-grey-200 text-grey-400">
+                                <Disc size={24} className="opacity-50" />
+                                <span className="text-[10px] font-bold">
+                                  NO DATA
+                                </span>
+                              </div>
+                              <div className="flex flex-col justify-center gap-1">
+                                <p className="text-xs font-bold text-grey-500">
+                                  {button}B DJ POWER
+                                </p>
+                                <p className="text-sm text-grey-400">기록 없음</p>
+                              </div>
+                            </div>
+                          );
+                        }
                         return (
                           <div
                             key={button}
-                            className="flex h-[117px] items-center gap-4 rounded-xl bg-grey-50 p-4"
+                            className="flex items-center gap-4 rounded-xl bg-grey-50 p-4 hover:bg-grey-100 transition-colors"
                           >
-                            <div className="flex h-20 w-20 shrink-0 flex-col items-center justify-center gap-1 rounded-lg bg-grey-200 text-grey-400">
-                              <Disc size={24} className="opacity-50" />
-                              <span className="text-[10px] font-bold">
-                                NO DATA
-                              </span>
-                            </div>
-                            <div className="flex flex-col justify-center gap-1">
-                              <p className="text-xs font-bold text-grey-500">
-                                {button}B DJ POWER
+                            {/* eslint-disable-next-line @next/next/no-img-element -- keep <img> so capture includes jackets reliably */}
+                            <img
+                              src={`https://v-archive.net/static/images/jackets/${entry.title}.jpg`}
+                              alt={entry.name}
+                              className="h-20 w-20 rounded-lg object-cover shadow-sm"
+                              loading="lazy"
+                            />
+                            <div className="flex-1 flex flex-col justify-center gap-1 min-w-0">
+                              <div className="flex justify-between items-center">
+                                <p className="text-xs font-bold text-grey-500">
+                                  {button}B DJ POWER
+                                </p>
+                                <span className="truncate text-[10px] font-medium text-grey-500 bg-white px-1.5 py-0.5 rounded border border-grey-100">
+                                  {entry.dlc}
+                                </span>
+                              </div>
+                              <p
+                                className="text-lg font-bold text-grey-900 truncate -mt-0.5"
+                                title={entry.name}
+                              >
+                                {entry.name}
                               </p>
-                              <p className="text-sm text-grey-400">기록 없음</p>
+                              <div className="flex items-center justify-between mt-0.5">
+                                <span
+                                  className={`
+                                px-1.5 py-0.5 rounded text-[10px] font-bold tracking-tight
+                                ${entry.pattern.startsWith("SC")
+                                      ? "bg-purple-50 text-purple-600"
+                                      : "bg-grey-100 text-grey-600"
+                                    }
+                              `}
+                                >
+                                  {entry.pattern}
+                                </span>
+                                <span className="text-lg font-bold text-brand">
+                                  {formatScore(entry.score)}% /{" "}
+                                  {formatScore(entry.djpower)}
+                                </span>
+                              </div>
                             </div>
                           </div>
                         );
-                      }
-                      return (
-                        <div
-                          key={button}
-                          className="flex items-center gap-4 rounded-xl bg-grey-50 p-4 hover:bg-grey-100 transition-colors"
-                        >
-                          <img
-                            src={`https://v-archive.net/static/images/jackets/${entry.title}.jpg`}
-                            alt={entry.name}
-                            className="h-20 w-20 rounded-lg object-cover shadow-sm"
-                            loading="lazy"
-                          />
-                          <div className="flex-1 flex flex-col justify-center gap-1 min-w-0">
-                            <div className="flex justify-between items-center">
-                              <p className="text-xs font-bold text-grey-500">
-                                {button}B DJ POWER
-                              </p>
-                              <span className="truncate text-[10px] font-medium text-grey-500 bg-white px-1.5 py-0.5 rounded border border-grey-100">
-                                {entry.dlc}
-                              </span>
-                            </div>
-                            <p
-                              className="text-lg font-bold text-grey-900 truncate -mt-0.5"
-                              title={entry.name}
-                            >
-                              {entry.name}
-                            </p>
-                            <div className="flex items-center justify-between mt-0.5">
-                              <span
-                                className={`
-                                px-1.5 py-0.5 rounded text-[10px] font-bold tracking-tight
-                                ${entry.pattern.startsWith("SC")
-                                    ? "bg-purple-50 text-purple-600"
-                                    : "bg-grey-100 text-grey-600"
-                                  }
-                              `}
-                              >
-                                {entry.pattern}
-                              </span>
-                              <span className="text-lg font-bold text-brand">
-                                {formatScore(entry.score)}% /{" "}
-                                {formatScore(entry.djpower)}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </section>
+                      })}
+                    </div>
+                  </section>
 
-                <section className="ui-card md:col-span-3">
-                  <h2 className="section-title">달성 티어</h2>
-                  <TierVideoList tiers={data.tiers} />
-                </section>
+                  <section className="ui-card md:col-span-3">
+                    <h2 className="section-title">달성 티어</h2>
+                    <TierVideoList tiers={data.tiers} />
+                  </section>
 
-                <section className="ui-card md:col-span-3">
-                  <h2 className="section-title">성과표 TOP 포인트</h2>
-                  <TopList tiers={data.tiers} />
-                </section>
-              </div>
-            </>
-          )}
+                  <section className="ui-card md:col-span-3">
+                    <h2 className="section-title">성과표 TOP 포인트</h2>
+                    <TopList tiers={data.tiers} />
+                  </section>
+                </div>
+              </>
+            )}
+          </div>
         </div>
-      </div>
 
-      {/* Footer */}
-      <footer className="recap-footer w-full text-center text-sm text-grey-500 py-5">
-        <p>
-          Developed by <span className="font-medium text-grey-700">DmNote</span>{" "}
-          · API provided by{" "}
-          <span className="font-medium text-grey-700">V-Archive</span>
-        </p>
-      </footer>
-    </main>
+        {/* Footer */}
+        <footer className="recap-footer w-full text-center text-sm text-grey-500 py-5">
+          <p>
+            Developed by <span className="font-medium text-grey-700">DmNote</span>{" "}
+            · API provided by{" "}
+            <span className="font-medium text-grey-700">V-Archive</span>
+          </p>
+        </footer>
+      </main>
+
+      {isSaving && (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-[#f2f4f6]"
+          role="status"
+          aria-live="polite"
+          aria-label="이미지 저장 중"
+        >
+          <div className="flex items-center gap-3 text-grey-700">
+            <div className="h-6 w-6 animate-spin rounded-full border-2 border-brand border-t-transparent" />
+            <span className="text-sm font-bold">이미지 저장 중...</span>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 

@@ -15,11 +15,20 @@ type VideoReplacement = {
   parent: HTMLElement;
 };
 
+type OriginalImageState = {
+  src: string;
+  srcset: string | null;
+  sizes: string | null;
+  loading: string | null;
+};
+
 // 이미지 저장 옵션 타입
 type SaveImageOptions = {
   fileName: string;
   backgroundColor?: string;
   pixelRatio?: number;
+  onBeforeCapture?: () => void | Promise<void>;
+  onAfterCapture?: () => void | Promise<void>;
 };
 
 // video 요소를 canvas 이미지로 대체하는 함수 (Safari 모바일 대응)
@@ -116,15 +125,34 @@ const restoreVideos = (replacements: VideoReplacement[]) => {
 };
 
 // 이미지 원본 복원 함수
-const restoreOriginalImages = (originalSrcs: Map<HTMLImageElement, string>) => {
-  originalSrcs.forEach((src, img) => {
-    img.src = src;
+const restoreOriginalImages = (
+  originalSrcs: Map<HTMLImageElement, OriginalImageState>
+) => {
+  originalSrcs.forEach((state, img) => {
+    img.src = state.src;
+    if (state.srcset !== null) {
+      img.setAttribute("srcset", state.srcset);
+    } else {
+      img.removeAttribute("srcset");
+    }
+    if (state.sizes !== null) {
+      img.setAttribute("sizes", state.sizes);
+    } else {
+      img.removeAttribute("sizes");
+    }
+    if (state.loading !== null) {
+      img.setAttribute("loading", state.loading);
+    } else {
+      img.removeAttribute("loading");
+    }
   });
 };
 
 // 이미지 placeholder (로드 실패 시 사용)
 const IMAGE_PLACEHOLDER =
   "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAiIGhlaWdodD0iODAiIHZpZXdCb3g9IjAgMCA4MCA4MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iODAiIGhlaWdodD0iODAiIGZpbGw9IiNFNUU4RUIiLz48L3N2Zz4=";
+const CAPTURE_DESKTOP_MIN_WIDTH = 1024;
+const CAPTURE_SIDE_PADDING = 40;
 
 /**
  * 이미지 저장 기능을 제공하는 커스텀 훅
@@ -138,36 +166,70 @@ export function useImageSaver() {
 
   // 이미지를 프록시를 통해 base64로 변환하는 함수
   const convertExternalImages = useCallback(
-    async (element: HTMLElement): Promise<Map<HTMLImageElement, string>> => {
-      const originalSrcs = new Map<HTMLImageElement, string>();
+    async (
+      element: HTMLElement
+    ): Promise<Map<HTMLImageElement, OriginalImageState>> => {
+      const originalSrcs = new Map<HTMLImageElement, OriginalImageState>();
       const images = element.querySelectorAll("img");
 
+      const applyReplacement = (img: HTMLImageElement, dataUrl: string) => {
+        img.src = dataUrl;
+        img.removeAttribute("srcset");
+        img.removeAttribute("sizes");
+        img.setAttribute("loading", "eager");
+      };
+
       const promises = Array.from(images).map(async (img) => {
+        const currentSrc = img.currentSrc || img.src;
         if (
-          !img.src ||
-          img.src.startsWith("data:") ||
-          img.src.startsWith(window.location.origin)
+          !currentSrc ||
+          currentSrc.startsWith("data:")
         ) {
           return;
         }
 
+        const isNextImage =
+          img.dataset.nimg === "1" || currentSrc.includes("/_next/image");
+        const isSameOrigin = currentSrc.startsWith(window.location.origin);
+        if (isSameOrigin && !isNextImage) {
+          return;
+        }
+
         // 원본 src 저장
-        const originalSrc = img.src;
-        originalSrcs.set(img, originalSrc);
+        originalSrcs.set(img, {
+          src: img.src,
+          srcset: img.getAttribute("srcset"),
+          sizes: img.getAttribute("sizes"),
+          loading: img.getAttribute("loading"),
+        });
+
+        let sourceUrl = currentSrc;
+        if (isNextImage) {
+          try {
+            const parsed = new URL(currentSrc, window.location.origin);
+            sourceUrl = parsed.searchParams.get("url") ?? currentSrc;
+          } catch {
+            sourceUrl = currentSrc;
+          }
+        }
+        const sourceOrigin = new URL(sourceUrl, window.location.origin).origin;
+        const shouldProxy = sourceOrigin !== window.location.origin;
+        const cacheKey = sourceUrl;
 
         // 캐시에 있으면 재사용 (중복 API 요청 방지)
-        const cached = imageCache.current.get(originalSrc);
+        const cached = imageCache.current.get(cacheKey);
         if (cached) {
-          img.src = cached;
+          applyReplacement(img, cached);
           return;
         }
 
         try {
-          // 프록시를 통해 이미지 가져오기 (프록시 환경에서도 올바른 URL 사용)
-          const proxyUrl = `${API_BASE_URL}/api/image-proxy?url=${encodeURIComponent(
-            originalSrc
-          )}`;
-          const response = await fetch(proxyUrl);
+          const fetchUrl = shouldProxy
+            ? `${API_BASE_URL}/api/image-proxy?url=${encodeURIComponent(
+                sourceUrl
+              )}`
+            : sourceUrl;
+          const response = await fetch(fetchUrl);
 
           if (!response.ok) throw new Error("Proxy failed");
 
@@ -182,13 +244,13 @@ export function useImageSaver() {
           });
 
           // 캐시에 저장
-          imageCache.current.set(originalSrc, dataUrl);
-          img.src = dataUrl;
+          imageCache.current.set(cacheKey, dataUrl);
+          applyReplacement(img, dataUrl);
         } catch {
-          console.warn("이미지 변환 실패:", originalSrc);
+          console.warn("이미지 변환 실패:", sourceUrl);
           // 실패시 회색 placeholder로 대체
-          imageCache.current.set(originalSrc, IMAGE_PLACEHOLDER);
-          img.src = IMAGE_PLACEHOLDER;
+          imageCache.current.set(cacheKey, IMAGE_PLACEHOLDER);
+          applyReplacement(img, IMAGE_PLACEHOLDER);
         }
       });
 
@@ -246,26 +308,62 @@ export function useImageSaver() {
       const captureContainer = element.querySelector<HTMLElement>(
         ".recap-container"
       );
+      const originalScroll = {
+        x: window.scrollX,
+        y: window.scrollY,
+      };
+      const originalBodyStyles = {
+        position: document.body.style.position,
+        top: document.body.style.top,
+        left: document.body.style.left,
+        right: document.body.style.right,
+        width: document.body.style.width,
+        overflow: document.body.style.overflow,
+        paddingRight: document.body.style.paddingRight,
+      };
+      const originalHtmlOverflow = document.documentElement.style.overflow;
+      const scrollbarWidth =
+        window.innerWidth - document.documentElement.clientWidth;
       const originalInlineStyles = {
         width: element.style.width,
         maxWidth: element.style.maxWidth,
         minWidth: element.style.minWidth,
         boxSizing: element.style.boxSizing,
       };
-      let originalSrcs: Map<HTMLImageElement, string> | null = null;
+      let originalSrcs: Map<HTMLImageElement, OriginalImageState> | null = null;
       let videoReplacements: VideoReplacement[] = [];
 
       try {
+        document.documentElement.style.overflow = "hidden";
+        document.body.style.position = "fixed";
+        document.body.style.top = `-${originalScroll.y}px`;
+        document.body.style.left = "0";
+        document.body.style.right = "0";
+        document.body.style.width = "100%";
+        document.body.style.overflow = "hidden";
+        if (scrollbarWidth > 0) {
+          document.body.style.paddingRight = `${scrollbarWidth}px`;
+        }
+        if (options.onBeforeCapture) {
+          await options.onBeforeCapture();
+        }
         element.classList.add("capture-mode");
+        await new Promise((resolve) => requestAnimationFrame(() => resolve(null)));
         await new Promise((resolve) => requestAnimationFrame(() => resolve(null)));
 
         if (captureContainer) {
           const captureContainerWidth =
             captureContainer.getBoundingClientRect().width;
+          const targetWidth = Math.max(
+            captureContainerWidth,
+            CAPTURE_DESKTOP_MIN_WIDTH
+          );
           element.style.boxSizing = "border-box";
           element.style.maxWidth = "none";
           element.style.minWidth = "0";
-          element.style.width = `${Math.ceil(captureContainerWidth + 80)}px`;
+          element.style.width = `${Math.ceil(
+            targetWidth + CAPTURE_SIDE_PADDING * 2
+          )}px`;
         }
 
         // 페이지 스크롤을 맨 위로 이동
@@ -348,6 +446,18 @@ export function useImageSaver() {
           restoreVideos(videoReplacements);
         }
         element.classList.remove("capture-mode");
+        if (options.onAfterCapture) {
+          await options.onAfterCapture();
+        }
+        document.body.style.position = originalBodyStyles.position;
+        document.body.style.top = originalBodyStyles.top;
+        document.body.style.left = originalBodyStyles.left;
+        document.body.style.right = originalBodyStyles.right;
+        document.body.style.width = originalBodyStyles.width;
+        document.body.style.overflow = originalBodyStyles.overflow;
+        document.body.style.paddingRight = originalBodyStyles.paddingRight;
+        document.documentElement.style.overflow = originalHtmlOverflow;
+        window.scrollTo(originalScroll.x, originalScroll.y);
         element.style.width = originalInlineStyles.width;
         element.style.maxWidth = originalInlineStyles.maxWidth;
         element.style.minWidth = originalInlineStyles.minWidth;

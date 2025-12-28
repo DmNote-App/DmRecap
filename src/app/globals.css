@@ -39,14 +39,39 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--grey-300);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--grey-400);
+}
+
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--grey-300) transparent;
+}
+
 .recap-root.capture-mode {
-  padding: 40px 40px 0 !important;
+  padding: 40px 0 0 !important;
   box-sizing: border-box;
 }
 
 .recap-root.capture-mode .recap-container {
-  padding-left: 0 !important;
-  padding-right: 0 !important;
+  padding-left: 24px !important;
+  padding-right: 24px !important;
 }
 
 .recap-root.capture-mode .recap-header {
@@ -56,6 +81,51 @@ body {
 .recap-root.capture-mode .recap-footer {
   padding-top: 20px !important;
   padding-bottom: 20px !important;
+}
+
+/* Align spacing with desktop variants during capture. */
+.recap-root.capture-mode .px-6.md\:px-0 {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+/* Force desktop typography for responsive headings during capture. */
+.recap-root.capture-mode .md\:text-5xl {
+  font-size: 3rem !important;
+}
+
+.recap-root.capture-mode .md\:leading-\[1\.1\] {
+  line-height: 1.1 !important;
+}
+
+/* Force desktop card rounding during capture. */
+.recap-root.capture-mode .ui-card {
+  border-radius: 24px !important;
+}
+
+/* Force desktop grid layout during capture, regardless of viewport size. */
+.recap-root.capture-mode .sm\:grid-cols-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+}
+
+.recap-root.capture-mode .md\:grid-cols-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+}
+
+.recap-root.capture-mode .md\:grid-cols-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+}
+
+.recap-root.capture-mode .lg\:grid-cols-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+}
+
+.recap-root.capture-mode .md\:col-span-2 {
+  grid-column: span 2 / span 2 !important;
+}
+
+.recap-root.capture-mode .md\:col-span-3 {
+  grid-column: span 3 / span 3 !important;
 }
 
 @layer components {
@@ -68,7 +138,7 @@ body {
 
   /* Solid Card (Cleaner) */
   .ui-card {
-    @apply rounded-[24px] bg-white px-6 py-6 transition-all duration-300;
+    @apply rounded-none md:rounded-[24px] bg-white px-6 py-6 transition-shadow duration-300;
     box-shadow: 0 0 16px rgba(0, 0, 50, 0.02);
   }
 

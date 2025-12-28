@@ -149,7 +149,8 @@ async function fetchTier(
 
 function collectRecords(
   boards: BoardResponse[],
-  rangeStart: Date
+  rangeStart: Date,
+  rangeEnd?: Date
 ): { records: RecordItem[]; totalPatterns: number; totalClearedPatterns: number } {
   const recordMap = new Map<string, RecordItem>();
   const patternKeys = new Set<string>();
@@ -172,10 +173,13 @@ function collectRecords(
         if (Number.isNaN(score)) {
           continue;
         }
-        clearedPatternKeys.add(baseKey);
         if (updatedAt < rangeStart) {
           continue;
         }
+        if (rangeEnd && updatedAt >= rangeEnd) {
+          continue;
+        }
+        clearedPatternKeys.add(baseKey);
 
         const existing = recordMap.get(baseKey);
         if (!existing || updatedAt > existing.updatedAt) {
@@ -206,7 +210,8 @@ function collectRecords(
 
 export async function fetchRecapData(
   nickname: string,
-  rangeStart: Date
+  rangeStart: Date,
+  rangeEnd?: Date
 ): Promise<RecapResult> {
   const combos = BUTTONS.flatMap((button) =>
     BOARDS.map((board) => ({ button, board }))
@@ -220,7 +225,8 @@ export async function fetchRecapData(
 
   const { records, totalPatterns, totalClearedPatterns } = collectRecords(
     boardResponses,
-    rangeStart
+    rangeStart,
+    rangeEnd
   );
   const stats = deriveRecapStats(records, [...BUTTONS]);
 

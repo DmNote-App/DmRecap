@@ -4,7 +4,7 @@ import "./globals.css";
 import Providers from "./providers";
 
 export const metadata: Metadata = {
-  title: "V-ARCHIVE Recap 2025",
+  title: "DM Note - V-ARCHIVE Recap",
   description: "한 해 동안의 기록을 되돌아보는 시간"
 };
 

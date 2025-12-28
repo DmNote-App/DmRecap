@@ -5,6 +5,15 @@ const isProd = process.env.NODE_ENV === "production";
 const nextConfig = {
   assetPrefix: isProd ? "https://dm-recap.vercel.app" : undefined,
   reactStrictMode: true,
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "v-archive.net",
+        pathname: "/static/images/jackets/**",
+      },
+    ],
+  },
   async headers() {
     return [
       {
