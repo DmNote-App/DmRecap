@@ -243,10 +243,31 @@ export function useImageSaver() {
 
       setIsSaving(true);
       const element = elementRef.current;
+      const captureContainer = element.querySelector<HTMLElement>(
+        ".recap-container"
+      );
+      const originalInlineStyles = {
+        width: element.style.width,
+        maxWidth: element.style.maxWidth,
+        minWidth: element.style.minWidth,
+        boxSizing: element.style.boxSizing,
+      };
       let originalSrcs: Map<HTMLImageElement, string> | null = null;
       let videoReplacements: VideoReplacement[] = [];
 
       try {
+        element.classList.add("capture-mode");
+        await new Promise((resolve) => requestAnimationFrame(() => resolve(null)));
+
+        if (captureContainer) {
+          const captureContainerWidth =
+            captureContainer.getBoundingClientRect().width;
+          element.style.boxSizing = "border-box";
+          element.style.maxWidth = "none";
+          element.style.minWidth = "0";
+          element.style.width = `${Math.ceil(captureContainerWidth + 80)}px`;
+        }
+
         // 페이지 스크롤을 맨 위로 이동
         window.scrollTo(0, 0);
 
@@ -326,6 +347,11 @@ export function useImageSaver() {
         if (videoReplacements.length > 0) {
           restoreVideos(videoReplacements);
         }
+        element.classList.remove("capture-mode");
+        element.style.width = originalInlineStyles.width;
+        element.style.maxWidth = originalInlineStyles.maxWidth;
+        element.style.minWidth = originalInlineStyles.minWidth;
+        element.style.boxSizing = originalInlineStyles.boxSizing;
         setIsSaving(false);
       }
     },

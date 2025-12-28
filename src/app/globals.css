@@ -39,6 +39,25 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+.recap-root.capture-mode {
+  padding: 40px 40px 0 !important;
+  box-sizing: border-box;
+}
+
+.recap-root.capture-mode .recap-container {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+.recap-root.capture-mode .recap-header {
+  display: none !important;
+}
+
+.recap-root.capture-mode .recap-footer {
+  padding-top: 20px !important;
+  padding-bottom: 20px !important;
+}
+
 @layer components {
 
   /* Glass Card */

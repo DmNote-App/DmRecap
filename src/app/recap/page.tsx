@@ -1136,10 +1136,13 @@ function RecapContent() {
   };
 
   return (
-    <main ref={mainRef} className="min-h-screen w-full bg-[#f2f4f6] pt-10">
-      <div className="mx-auto max-w-5xl px-6">
+    <main
+      ref={mainRef}
+      className="recap-root min-h-screen w-full bg-[#f2f4f6] pt-10"
+    >
+      <div className="recap-container mx-auto max-w-5xl px-6">
         {/* Navigation */}
-        <header className="mb-12 flex items-center justify-between">
+        <header className="recap-header mb-12 flex items-center justify-between">
           <button
             onClick={() => router.push("/recap")}
             className="flex items-center gap-2 text-grey-600 hover:text-grey-900 transition-colors"
@@ -1161,10 +1164,10 @@ function RecapContent() {
 
         {/* Header */}
         <div className="mb-4">
-          <h1 className="text-4xl font-bold text-grey-900 md:text-5xl">
+          <h1 className="text-4xl font-bold text-grey-900 md:text-5xl leading-[1.1] md:leading-[1.1]">
             {activeNickname}님의
             <br />
-            <span className="text-brand">2025년</span>
+            <span className="text-brand">2025년 DJMAX</span>
           </h1>
           <p className="mt-4 text-grey-600">
             올해 기록된 모든 플레이 데이터를 분석했어요.
@@ -1367,7 +1370,7 @@ function RecapContent() {
       </div>
 
       {/* Footer */}
-      <footer className="w-full text-center text-sm text-grey-500 py-5">
+      <footer className="recap-footer w-full text-center text-sm text-grey-500 py-5">
         <p>
           Developed by <span className="font-medium text-grey-700">DmNote</span>{" "}
           · API provided by{" "}
