@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 import NicknameForm from "@/components/NicknameForm";
+import KeyViewerBanner from "@/components/KeyViewerBanner";
 import { useNicknameStore } from "@/store/useNicknameStore";
 import { checkNicknameExists } from "@/lib/varchive";
 
@@ -46,12 +47,12 @@ export default function HomePage() {
       <div className="z-10 w-full max-w-lg flex flex-col gap-10">
         {/* Header Section */}
         <div className="flex flex-col items-center text-center gap-3">
-          <div className="chip-blue mb-1">2025 RECAP</div>
+          <div className="chip-blue mb-1">2025 DJMAX</div>
           <h1 className="text-4xl font-bold leading-tight text-grey-900 md:text-5xl word-keep">
             <span className="text-brand">V-ARCHIVE</span> RECAP
           </h1>
           <p className="text-grey-600 leading-relaxed word-keep">
-            2025년을 한눈에 확인해보세요!
+            한 해 동안의 기록을 되돌아보는 시간
           </p>
         </div>
 
@@ -64,6 +65,11 @@ export default function HomePage() {
             helperText="V-ARCHIVE에 등록된 닉네임으로 조회됩니다."
             errorMessage={errorMessage ?? undefined}
           />
+        </div>
+
+        {/* Advertisement Banner */}
+        <div className="w-full">
+          <KeyViewerBanner />
         </div>
       </div>
 
