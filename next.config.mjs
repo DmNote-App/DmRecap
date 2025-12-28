@@ -1,7 +1,10 @@
 /** @type {import('next').NextConfig} */
+
+const isProd = process.env.NODE_ENV === "production";
+
 const nextConfig = {
-  assetPrefix: 'https://dm-recap.vercel.app',
-  reactStrictMode: true
+  assetPrefix: isProd ? "https://dm-recap.vercel.app" : undefined,
+  reactStrictMode: true,
 };
 
 export default nextConfig;
