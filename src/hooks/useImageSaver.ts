@@ -219,8 +219,9 @@ export function useImageSaver() {
         }
 
         try {
+          // basePath가 /recap이므로 API 경로도 /recap/api/...로 요청
           const fetchUrl = shouldProxy
-            ? `/api/image-proxy?url=${encodeURIComponent(sourceUrl)}`
+            ? `/recap/api/image-proxy?url=${encodeURIComponent(sourceUrl)}`
             : sourceUrl;
           const response = await fetch(fetchUrl);
 

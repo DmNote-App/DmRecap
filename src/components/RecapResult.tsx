@@ -72,7 +72,8 @@ function TierVideoList({
         ];
         const match = tiersList.find((t) => lower.startsWith(t));
         if (match) {
-          videoPath = `/assets/tier/${match}.mp4`;
+          // basePath가 /recap이므로 자산 경로도 /recap/assets/...로 요청
+          videoPath = `/recap/assets/tier/${match}.mp4`;
         } else {
           if (lower.includes("beginner")) isBeginner = true;
           if (lower.includes("amateur")) isAmateur = true;
@@ -1255,7 +1256,10 @@ function RecapContent() {
           {/* Navigation */}
           <header className="recap-header mb-12 flex items-center justify-between px-6 md:px-0">
             <button
-              onClick={() => router.push(window.location.pathname)}
+              onClick={() => {
+                // 쿼리 파라미터만 제거하고 현재 pathname 유지
+                window.location.href = window.location.pathname;
+              }}
               className="flex items-center gap-2 text-grey-600 hover:text-grey-900 transition-colors"
             >
               <ArrowLeft size={24} />
