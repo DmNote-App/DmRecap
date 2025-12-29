@@ -146,6 +146,18 @@ function TierVideoList({
     syncIntervalId.current = window.setInterval(syncVideos, 250);
   }, [syncVideos]);
 
+  const isContainerInView = useCallback(() => {
+    const target = containerRef.current;
+    if (!target) return false;
+    const rect = target.getBoundingClientRect();
+    const viewportHeight =
+      window.innerHeight || document.documentElement.clientHeight;
+    const threshold = rect.height * 0.2;
+    const topVisible = rect.top + threshold < viewportHeight;
+    const bottomVisible = rect.bottom - threshold > 0;
+    return topVisible && bottomVisible;
+  }, []);
+
   const seekTo = useCallback((video: HTMLVideoElement, targetTime: number) => {
     return new Promise<void>((resolve) => {
       const isAtTarget = Math.abs(video.currentTime - targetTime) < 0.001;
@@ -159,6 +171,30 @@ function TierVideoList({
       video.currentTime = targetTime;
     });
   }, []);
+
+  const resumePlayback = useCallback(() => {
+    if (!hasStarted.current) return;
+    const shouldPlay = isInViewRef.current || isContainerInView();
+    if (!shouldPlay) return;
+    if (!isInViewRef.current) {
+      isInViewRef.current = true;
+      setIsInView(true);
+    }
+
+    const videos = Object.values(videoRefs.current).filter(Boolean);
+    if (videos.length === 0) return;
+
+    const playPromises = videos.map((video) => video.play().catch(() => {}));
+    Promise.all(playPromises).then(() => {
+      const masterTime = videos[0]?.currentTime ?? 0;
+      videos.forEach((video) => {
+        if (Math.abs(video.currentTime - masterTime) > 0.02) {
+          video.currentTime = masterTime;
+        }
+      });
+      startSync();
+    });
+  }, [isContainerInView, startSync, videoRefs]);
 
   // Synchronized playback start
   useEffect(() => {
@@ -244,6 +280,37 @@ function TierVideoList({
 
     startSync();
   }, [isInView, startSync, stopSync, videoRefs]);
+
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "hidden") {
+        stopSync();
+        return;
+      }
+      resumePlayback();
+    };
+
+    const handlePageShow = () => {
+      if (document.visibilityState === "visible") {
+        resumePlayback();
+      }
+    };
+
+    const handleFocus = () => {
+      if (document.visibilityState === "visible") {
+        resumePlayback();
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("pageshow", handlePageShow);
+    window.addEventListener("focus", handleFocus);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("pageshow", handlePageShow);
+      window.removeEventListener("focus", handleFocus);
+    };
+  }, [resumePlayback, stopSync]);
 
   // Cleanup sync on unmount
   useEffect(() => {
