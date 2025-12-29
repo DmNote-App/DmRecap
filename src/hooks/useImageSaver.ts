@@ -478,6 +478,7 @@ export function useImageSaver() {
             useCORS: true,
             allowTaint: false,
             logging: false,
+            foreignObjectRendering: isFirefox,
             scrollX: 0,
             scrollY: 0,
             windowWidth: captureTarget.scrollWidth,
