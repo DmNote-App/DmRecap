@@ -1,40 +1,58 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import dynamic from "next/dynamic";
 
 import NicknameForm from "@/components/NicknameForm";
 import KeyViewerBanner from "@/components/KeyViewerBanner";
 import { useNicknameStore } from "@/store/useNicknameStore";
 import { checkNicknameExists } from "@/lib/varchive";
 
-export default function HomePage() {
+// 동적 import로 RecapResult 로드 (코드 스플리팅)
+const RecapResult = dynamic(() => import("@/components/RecapResult"), {
+  loading: () => (
+    <main className="min-h-screen w-full bg-[#f2f4f6] pt-10">
+      <div className="mx-auto max-w-5xl px-6">
+        <div className="text-center py-20">
+          <div className="text-grey-600">로딩 중...</div>
+        </div>
+      </div>
+    </main>
+  ),
+});
+
+function HomeContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { nickname, setNickname } = useNicknameStore();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isChecking, setIsChecking] = useState(false);
+
+  // 쿼리 파라미터에 nickname이 있으면 결과 페이지 표시
+  const nicknameParam = searchParams.get("nickname");
+  if (nicknameParam) {
+    return <RecapResult />;
+  }
 
   const handleSubmit = async (value: string) => {
     setErrorMessage(null);
     setIsChecking(true);
 
-    // 절대 경로 사용 - basePath가 자동으로 붙음 (/recap/result)
-    const targetPath = `/result?nickname=${encodeURIComponent(value)}`;
-
     try {
       const exists = await checkNicknameExists(value);
       if (exists) {
         setNickname(value);
-        router.push(targetPath);
-        // 성공 시에는 isChecking을 true로 유지 (페이지 이동됨)
+        // 쿼리 파라미터만 추가 (같은 페이지에서 결과 표시)
+        router.push(`?nickname=${encodeURIComponent(value)}`);
       } else {
         setErrorMessage("닉네임을 다시 확인해주세요.");
-        setIsChecking(false); // 에러일 때만 버튼 되돌리기
+        setIsChecking(false);
       }
     } catch {
-      // API 에러가 발생해도 일단 이동 (result 페이지에서 다시 시도)
+      // API 에러가 발생해도 일단 이동
       setNickname(value);
-      router.push(targetPath);
+      router.push(`?nickname=${encodeURIComponent(value)}`);
     }
   };
 
@@ -85,5 +103,19 @@ export default function HomePage() {
         </p>
       </footer>
     </main>
+  );
+}
+
+export default function HomePage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="min-h-screen w-full bg-[#f2f4f6] flex items-center justify-center">
+          <div className="text-grey-600">로딩 중...</div>
+        </main>
+      }
+    >
+      <HomeContent />
+    </Suspense>
   );
 }

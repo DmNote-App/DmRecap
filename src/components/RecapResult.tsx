@@ -1188,7 +1188,7 @@ function RecapContent() {
           {/* Navigation */}
           <header className="recap-header mb-12 flex items-center justify-between px-6 md:px-0">
             <button
-              onClick={() => router.push("/")}
+              onClick={() => router.push(window.location.pathname)}
               className="flex items-center gap-2 text-grey-600 hover:text-grey-900 transition-colors"
             >
               <ArrowLeft size={24} />
@@ -1456,7 +1456,7 @@ function RecapContent() {
   );
 }
 
-export default function RecapPage() {
+export default function RecapResult() {
   return (
     <Suspense
       fallback={

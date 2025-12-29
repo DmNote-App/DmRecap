@@ -1,8 +1,6 @@
 /** @type {import('next').NextConfig} */
 
 const nextConfig = {
-  // 프록시 환경(dmnote.app/recap)에서 정상 작동하도록 basePath 설정
-  basePath: "/recap",
   reactStrictMode: true,
   images: {
     remotePatterns: [
