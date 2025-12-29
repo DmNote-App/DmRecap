@@ -1540,7 +1540,7 @@ function RecapContent() {
           onClick={() => setShowConfirmModal(false)}
         >
           <div
-            className="bg-white rounded-xl p-5 mx-4 max-w-xs w-full"
+            className="bg-white rounded-[24px] p-5 mx-4 max-w-xs w-full"
             onClick={(e) => e.stopPropagation()}
           >
             <p className="text-base font-bold text-grey-900 text-center mb-4">
@@ -1549,13 +1549,13 @@ function RecapContent() {
             <div className="flex gap-2">
               <button
                 onClick={() => handleConfirmSave(false)}
-                className="flex-1 py-2.5 rounded-xl bg-grey-100 text-grey-700 font-bold text-sm hover:bg-grey-200 transition-colors"
+                className="flex-1 py-2.5 rounded-[12px] bg-grey-100 text-grey-700 font-bold text-sm hover:bg-grey-200 transition-colors"
               >
                 아니여
               </button>
               <button
                 onClick={() => handleConfirmSave(true)}
-                className="flex-1 py-2.5 rounded-xl bg-brand text-white font-bold text-sm hover:bg-[#1b64da] transition-colors"
+                className="flex-1 py-2.5 rounded-[12px] bg-brand text-white font-bold text-sm hover:bg-[#1b64da] transition-colors"
               >
                 넹
               </button>
