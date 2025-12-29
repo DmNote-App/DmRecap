@@ -22,14 +22,14 @@ export default function KeyViewerBanner() {
                 <div className="flex flex-col gap-0.5">
                     <div className="flex items-center gap-2">
                         <h3 className="text-lg font-bold text-grey-900">
-                            DM Note KeyViewer
+                            DM Note Viewer
                         </h3>
                         <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-bold text-blue-600">
                             NEW
                         </span>
                     </div>
                     <p className="text-[15px] font-medium text-grey-600">
-                        강력한 커스터마이징을 지원하는 키뷰어
+                        커스터마이징을 지원하는 키뷰어
                     </p>
                 </div>
             </div>
