@@ -479,6 +479,13 @@ export function useImageSaver() {
             allowTaint: false,
             logging: false,
             foreignObjectRendering: isFirefox,
+            onclone: (clonedDocument) => {
+              if (!fontEmbedCSS) return;
+              const style = clonedDocument.createElement("style");
+              style.setAttribute("data-capture-fonts", "true");
+              style.textContent = fontEmbedCSS;
+              clonedDocument.head.appendChild(style);
+            },
             scrollX: 0,
             scrollY: 0,
             windowWidth: captureTarget.scrollWidth,
