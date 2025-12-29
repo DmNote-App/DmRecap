@@ -18,8 +18,8 @@ export default function HomePage() {
     setErrorMessage(null);
     setIsChecking(true);
 
-    // basePath가 /recap이므로 result 경로로 이동 -> /recap/result가 됨
-    const targetPath = `result?nickname=${encodeURIComponent(value)}`;
+    // 절대 경로 사용 - basePath가 자동으로 붙음 (/recap/result)
+    const targetPath = `/result?nickname=${encodeURIComponent(value)}`;
 
     try {
       const exists = await checkNicknameExists(value);
