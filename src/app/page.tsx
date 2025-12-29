@@ -11,15 +11,7 @@ import { checkNicknameExists } from "@/lib/varchive";
 
 // 동적 import로 RecapResult 로드 (코드 스플리팅)
 const RecapResult = dynamic(() => import("@/components/RecapResult"), {
-  loading: () => (
-    <main className="min-h-screen w-full bg-[#f2f4f6] pt-10">
-      <div className="mx-auto max-w-5xl px-6">
-        <div className="text-center py-20">
-          <div className="text-grey-600">로딩 중...</div>
-        </div>
-      </div>
-    </main>
-  ),
+  loading: () => null,
 });
 
 function HomeContent() {
@@ -108,13 +100,7 @@ function HomeContent() {
 
 export default function HomePage() {
   return (
-    <Suspense
-      fallback={
-        <main className="min-h-screen w-full bg-[#f2f4f6] flex items-center justify-center">
-          <div className="text-grey-600">로딩 중...</div>
-        </main>
-      }
-    >
+    <Suspense fallback={null}>
       <HomeContent />
     </Suspense>
   );
