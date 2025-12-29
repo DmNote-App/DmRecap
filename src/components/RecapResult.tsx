@@ -1258,6 +1258,7 @@ function RecapContent() {
   const [isCapturing, setIsCapturing] = useState(false);
   const [hideNickname, setHideNickname] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [captureProgress, setCaptureProgress] = useState(0);
   const shouldHideRef = useRef(false);
 
   const handleSaveClick = () => {
@@ -1273,9 +1274,13 @@ function RecapContent() {
       ? `2025_recap_${dateStr}.png`
       : `${activeNickname}_2025_recap_${dateStr}.png`;
 
+    setCaptureProgress(0);
     saveAsImage(mainRef, {
       fileName,
       pixelRatio: 3,
+      onProgress: (value) => {
+        setCaptureProgress((prev) => Math.max(prev, value));
+      },
       onBeforeCapture: async () => {
         setIsCapturing(true);
         if (shouldHideRef.current) {
@@ -1288,6 +1293,7 @@ function RecapContent() {
       onAfterCapture: () => {
         setIsCapturing(false);
         setHideNickname(false);
+        setCaptureProgress(0);
       },
     });
   };
@@ -1609,9 +1615,17 @@ function RecapContent() {
           aria-live="polite"
           aria-label="이미지 저장 중"
         >
-          <div className="flex items-center gap-3 text-grey-700">
-            <div className="h-6 w-6 animate-spin rounded-full border-2 border-brand border-t-transparent" />
-            <span className="text-sm font-bold">이미지 저장 중...</span>
+          <div className="flex flex-col items-center gap-6">
+            <p className="text-lg font-semibold text-grey-700 text-center">
+              <span className="block">소중한 기록을 저장하는 중이에요!</span>
+              <span className="block">잠시만 기다려주세요..</span>
+            </p>
+            <div className="h-2.5 w-72 overflow-hidden rounded-full bg-grey-300">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-brand to-blue-400 transition-[width] duration-300 ease-out"
+                style={{ width: `${Math.min(100, Math.max(5, captureProgress))}%` }}
+              />
+            </div>
           </div>
         </div>
       )}

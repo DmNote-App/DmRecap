@@ -29,12 +29,21 @@ type ExternalImageConversionResult = {
 };
 
 // 이미지 저장 옵션 타입
+export type SaveProgressStage =
+  | "prepare"
+  | "freeze"
+  | "gather"
+  | "render"
+  | "encode"
+  | "finish";
+
 type SaveImageOptions = {
   fileName: string;
   backgroundColor?: string;
   pixelRatio?: number;
   onBeforeCapture?: () => void | Promise<void>;
   onAfterCapture?: () => void | Promise<void>;
+  onProgress?: (value: number, stage: SaveProgressStage) => void;
 };
 
 // video 요소를 canvas 이미지로 대체하는 함수 (Safari 모바일 대응)
@@ -389,6 +398,7 @@ export function useImageSaver() {
       if (!elementRef.current || isSaving) return;
 
       setIsSaving(true);
+      options.onProgress?.(5, "prepare");
       const rootElement = elementRef.current;
       const captureContainer =
         rootElement.querySelector<HTMLElement>(".recap-container");
@@ -437,6 +447,7 @@ export function useImageSaver() {
         if (options.onBeforeCapture) {
           await options.onBeforeCapture();
         }
+        options.onProgress?.(18, "freeze");
         if (!hadCaptureRootAttr) {
           captureTarget.setAttribute(captureRootAttr, "true");
         }
@@ -464,6 +475,7 @@ export function useImageSaver() {
         // video 요소를 이미지로 대체 (Safari 모바일 대응) - 먼저 실행
         try {
           videoReplacements = replaceVideosWithImages(captureTarget);
+          options.onProgress?.(32, "gather");
         } catch (videoError) {
           console.warn("비디오 대체 실패, 계속 진행:", videoError);
         }
@@ -471,16 +483,19 @@ export function useImageSaver() {
         // 외부 이미지를 Blob/Object URL로 변환 (병렬 처리됨)
         try {
           externalImages = await convertExternalImages(captureTarget);
+          options.onProgress?.(55, "gather");
         } catch (imgError) {
           console.warn("외부 이미지 변환 실패, 계속 진행:", imgError);
         }
 
         // 렌더링 완료 대기 (단축된 대기 시간)
         await waitForImages(captureTarget);
+        options.onProgress?.(70, "render");
         // 모바일에서는 더 짧은 대기, 데스크톱에서는 안정성을 위해 약간 더 대기
         await new Promise((resolve) =>
           setTimeout(resolve, isMobileDevice() ? 50 : 100)
         );
+        options.onProgress?.(75, "render");
 
         // 모바일/저사양 기기에서는 낮은 해상도로 메모리 절약
         const isMobile = isMobileDevice();
@@ -515,6 +530,7 @@ export function useImageSaver() {
           if (blob) {
             downloadUrl = URL.createObjectURL(blob);
             revokeDownloadUrl = () => URL.revokeObjectURL(downloadUrl);
+            options.onProgress?.(90, "encode");
           } else {
             throw new Error("Blob 생성 실패");
           }
@@ -530,6 +546,7 @@ export function useImageSaver() {
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+        options.onProgress?.(100, "finish");
         // Object URL 즉시 해제 (메모리 절약)
         if (revokeDownloadUrl) {
           // 다운로드 완료 후 즉시 해제
