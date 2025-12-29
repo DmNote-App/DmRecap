@@ -1281,17 +1281,32 @@ function RecapContent() {
       document.head.appendChild(metaThemeColor);
     }
 
-    // 상태에 따라 theme-color 변경
+    // 상태에 따라 색상 변경
     if (showConfirmModal) {
       // 닉네임 확인 모달: 검은색 배경
       metaThemeColor.content = modalColor;
+      document.documentElement.style.backgroundColor = modalColor;
+      document.body.style.backgroundColor = modalColor;
     } else if (isSaving) {
       // 저장 중 오버레이: 기본 배경색
       metaThemeColor.content = defaultColor;
+      document.documentElement.style.backgroundColor = defaultColor;
+      document.body.style.backgroundColor = defaultColor;
     } else {
       // 기본 상태: 기본 배경색
       metaThemeColor.content = defaultColor;
+      document.documentElement.style.backgroundColor = defaultColor;
+      document.body.style.backgroundColor = defaultColor;
     }
+
+    // Cleanup: 컴포넌트 언마운트 시 기본색으로 복원
+    return () => {
+      document.documentElement.style.backgroundColor = defaultColor;
+      document.body.style.backgroundColor = defaultColor;
+      if (metaThemeColor) {
+        metaThemeColor.content = defaultColor;
+      }
+    };
   }, [showConfirmModal, isSaving]);
 
   return (
