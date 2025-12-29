@@ -170,6 +170,12 @@ const IMAGE_PLACEHOLDER =
   "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAiIGhlaWdodD0iODAiIHZpZXdCb3g9IjAgMCA4MCA4MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iODAiIGhlaWdodD0iODAiIGZpbGw9IiNFNUU4RUIiLz48L3N2Zz4=";
 const CAPTURE_DESKTOP_MIN_WIDTH = 1024;
 const CAPTURE_SIDE_PADDING = 40;
+const CAPTURE_FONT_FAMILY = '"Pretendard JP"';
+const CAPTURE_FONT_WEIGHTS = [400, 500, 600, 700];
+const CAPTURE_MAX_FONT_WAIT_MS = 2000;
+
+const sleep = (ms: number) =>
+  new Promise<void>((resolve) => setTimeout(resolve, ms));
 
 /**
  * 이미지 저장 기능을 제공하는 커스텀 훅
@@ -284,18 +290,53 @@ export function useImageSaver() {
 
     try {
       await document.fonts.ready;
-      await Promise.all([
-        document.fonts.load('400 1em "Pretendard JP"'),
-        document.fonts.load('500 1em "Pretendard JP"'),
-        document.fonts.load('600 1em "Pretendard JP"'),
-        document.fonts.load('700 1em "Pretendard JP"'),
-      ]);
+      await Promise.all(
+        CAPTURE_FONT_WEIGHTS.map((weight) =>
+          document.fonts.load(`${weight} 1em ${CAPTURE_FONT_FAMILY}`)
+        )
+      );
     } catch (error) {
       console.warn("폰트 로딩 대기 실패:", error);
     }
 
+    const startTime = Date.now();
+    while (Date.now() - startTime < CAPTURE_MAX_FONT_WAIT_MS) {
+      const allReady = CAPTURE_FONT_WEIGHTS.every((weight) =>
+        document.fonts.check(`${weight} 1em ${CAPTURE_FONT_FAMILY}`)
+      );
+      if (allReady) break;
+      await sleep(50);
+    }
+
     await new Promise((resolve) => requestAnimationFrame(() => resolve(null)));
     await new Promise((resolve) => requestAnimationFrame(() => resolve(null)));
+  }, []);
+
+  const waitForImages = useCallback(async (element: HTMLElement) => {
+    const images = Array.from(element.querySelectorAll("img"));
+    if (images.length === 0) return;
+
+    const decodePromises = images
+      .map((img) => {
+        if (img.complete && img.naturalWidth > 0) {
+          return null;
+        }
+
+        if (typeof img.decode === "function") {
+          return img.decode().catch(() => undefined);
+        }
+
+        return new Promise<void>((resolve) => {
+          const handleDone = () => resolve();
+          img.addEventListener("load", handleDone, { once: true });
+          img.addEventListener("error", handleDone, { once: true });
+        });
+      })
+      .filter(Boolean) as Promise<void>[];
+
+    if (decodePromises.length > 0) {
+      await Promise.all(decodePromises);
+    }
   }, []);
 
   const getFontEmbedCSS = useCallback(
@@ -315,6 +356,15 @@ export function useImageSaver() {
       }
     },
     []
+  );
+
+  const getFontEmbedCSSWithFallback = useCallback(
+    async (element: HTMLElement) => {
+      const woff2CSS = await getFontEmbedCSS(element, "woff2");
+      if (woff2CSS) return woff2CSS;
+      return getFontEmbedCSS(element, "woff");
+    },
+    [getFontEmbedCSS]
   );
 
   // 요소를 이미지로 저장하는 함수
@@ -406,8 +456,9 @@ export function useImageSaver() {
         }
 
         // 렌더링 완료 대기
+        await waitForImages(element);
         await waitForFonts();
-        const fontEmbedCSS = await getFontEmbedCSS(element, "woff2");
+        const fontEmbedCSS = await getFontEmbedCSSWithFallback(element);
         await new Promise((resolve) => setTimeout(resolve, 100));
         const shouldBustCache = !(externalImages?.objectUrls.length);
 
@@ -515,7 +566,13 @@ export function useImageSaver() {
         setIsSaving(false);
       }
     },
-    [isSaving, convertExternalImages, waitForFonts, getFontEmbedCSS]
+    [
+      isSaving,
+      convertExternalImages,
+      waitForImages,
+      waitForFonts,
+      getFontEmbedCSSWithFallback,
+    ]
   );
 
   // 캐시 초기화 함수

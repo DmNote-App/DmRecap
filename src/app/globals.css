@@ -67,6 +67,16 @@ body {
 .recap-root.capture-mode {
   padding: 40px 0 0 !important;
   box-sizing: border-box;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+.recap-root.capture-mode *,
+.recap-root.capture-mode *::before,
+.recap-root.capture-mode *::after {
+  animation: none !important;
+  transition: none !important;
+  caret-color: transparent;
 }
 
 .recap-root.capture-mode .recap-container {
