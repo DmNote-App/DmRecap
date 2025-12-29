@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
 
@@ -23,6 +23,11 @@ function HomeContent() {
 
   // 쿼리 파라미터에 nickname이 있으면 결과 페이지 표시
   const nicknameParam = searchParams.get("nickname");
+  useEffect(() => {
+    if (!nicknameParam) {
+      setIsChecking(false);
+    }
+  }, [nicknameParam]);
   if (nicknameParam) {
     return <RecapResult />;
   }

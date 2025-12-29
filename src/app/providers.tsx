@@ -2,7 +2,7 @@
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useEffect, useState, type ReactNode } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 
 function usePrefersReducedMotion() {
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
@@ -40,10 +40,15 @@ export default function Providers({ children }: { children: ReactNode }) {
       })
   );
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const hasNickname = Boolean(searchParams?.get("nickname"));
   const prefersReducedMotion = usePrefersReducedMotion();
 
   useEffect(() => {
-    if (pathname === "/" || prefersReducedMotion) {
+    if (prefersReducedMotion) {
+      return;
+    }
+    if (pathname === "/" && !hasNickname) {
       return;
     }
 
@@ -72,7 +77,7 @@ export default function Providers({ children }: { children: ReactNode }) {
       }
       lenis?.destroy();
     };
-  }, [pathname, prefersReducedMotion]);
+  }, [pathname, hasNickname, prefersReducedMotion]);
 
   return (
     <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>

@@ -147,65 +147,61 @@ async function fetchTier(
   }
 }
 
-function collectRecords(
-  boards: BoardResponse[],
+type RecordCollector = {
+  recordMap: Map<string, RecordItem>;
+  patternKeys: Set<string>;
+  clearedPatternKeys: Set<string>;
+};
+
+function collectRecordsFromBoard(
+  board: BoardResponse,
   rangeStart: Date,
-  rangeEnd?: Date
-): { records: RecordItem[]; totalPatterns: number; totalClearedPatterns: number } {
-  const recordMap = new Map<string, RecordItem>();
-  const patternKeys = new Set<string>();
-  const clearedPatternKeys = new Set<string>();
+  rangeEnd: Date | undefined,
+  collector: RecordCollector
+) {
+  const { recordMap, patternKeys, clearedPatternKeys } = collector;
+  const button = Number(board.button);
+  for (const floor of board.floors ?? []) {
+    for (const pattern of floor.patterns ?? []) {
+      const baseKey = `${pattern.title}-${button}-${pattern.pattern}`;
+      patternKeys.add(baseKey);
+      if (!pattern.score || !pattern.updatedAt) {
+        continue;
+      }
+      const updatedAt = new Date(pattern.updatedAt);
+      if (Number.isNaN(updatedAt.getTime())) {
+        continue;
+      }
+      const score = Number.parseFloat(pattern.score);
+      if (Number.isNaN(score)) {
+        continue;
+      }
+      if (updatedAt < rangeStart) {
+        continue;
+      }
+      if (rangeEnd && updatedAt >= rangeEnd) {
+        continue;
+      }
+      clearedPatternKeys.add(baseKey);
 
-  for (const board of boards) {
-    const button = Number(board.button);
-    for (const floor of board.floors ?? []) {
-      for (const pattern of floor.patterns ?? []) {
-        const baseKey = `${pattern.title}-${button}-${pattern.pattern}`;
-        patternKeys.add(baseKey);
-        if (!pattern.score || !pattern.updatedAt) {
-          continue;
-        }
-        const updatedAt = new Date(pattern.updatedAt);
-        if (Number.isNaN(updatedAt.getTime())) {
-          continue;
-        }
-        const score = Number.parseFloat(pattern.score);
-        if (Number.isNaN(score)) {
-          continue;
-        }
-        if (updatedAt < rangeStart) {
-          continue;
-        }
-        if (rangeEnd && updatedAt >= rangeEnd) {
-          continue;
-        }
-        clearedPatternKeys.add(baseKey);
-
-        const existing = recordMap.get(baseKey);
-        if (!existing || updatedAt > existing.updatedAt) {
-          recordMap.set(baseKey, {
-            title: pattern.title,
-            name: pattern.name,
-            dlc: pattern.dlc,
-            dlcCode: pattern.dlcCode,
-            button,
-            pattern: pattern.pattern,
-            score,
-            maxCombo: pattern.maxCombo ?? 0,
-            djpower: pattern.djpower ?? 0,
-            rating: Number.isFinite(pattern.rating) ? pattern.rating : 0,
-            updatedAt
-          });
-        }
+      const existing = recordMap.get(baseKey);
+      if (!existing || updatedAt > existing.updatedAt) {
+        recordMap.set(baseKey, {
+          title: pattern.title,
+          name: pattern.name,
+          dlc: pattern.dlc,
+          dlcCode: pattern.dlcCode,
+          button,
+          pattern: pattern.pattern,
+          score,
+          maxCombo: pattern.maxCombo ?? 0,
+          djpower: pattern.djpower ?? 0,
+          rating: Number.isFinite(pattern.rating) ? pattern.rating : 0,
+          updatedAt
+        });
       }
     }
   }
-
-  return {
-    records: Array.from(recordMap.values()),
-    totalPatterns: patternKeys.size,
-    totalClearedPatterns: clearedPatternKeys.size
-  };
 }
 
 export async function fetchRecapData(
@@ -217,17 +213,24 @@ export async function fetchRecapData(
     BOARDS.map((board) => ({ button, board }))
   );
 
-  const boardResponses = await promisePool(
+  const collector: RecordCollector = {
+    recordMap: new Map(),
+    patternKeys: new Set(),
+    clearedPatternKeys: new Set()
+  };
+
+  await promisePool(
     combos,
-    ({ button, board }) => fetchBoard(nickname, button, board),
+    async ({ button, board }) => {
+      const boardResponse = await fetchBoard(nickname, button, board);
+      collectRecordsFromBoard(boardResponse, rangeStart, rangeEnd, collector);
+    },
     6
   );
 
-  const { records, totalPatterns, totalClearedPatterns } = collectRecords(
-    boardResponses,
-    rangeStart,
-    rangeEnd
-  );
+  const records = Array.from(collector.recordMap.values());
+  const totalPatterns = collector.patternKeys.size;
+  const totalClearedPatterns = collector.clearedPatternKeys.size;
   const stats = deriveRecapStats(records, [...BUTTONS]);
 
   const tiers: Record<number, TierResponse | null> = {};
