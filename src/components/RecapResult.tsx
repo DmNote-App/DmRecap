@@ -1229,16 +1229,37 @@ function RecapContent() {
   const mainRef = useRef<HTMLElement>(null);
   const { isSaving, saveAsImage } = useImageSaver();
   const [isCapturing, setIsCapturing] = useState(false);
+  const [hideNickname, setHideNickname] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const shouldHideRef = useRef(false);
 
-  const handleSaveAsImage = () => {
+  const handleSaveClick = () => {
+    setShowConfirmModal(true);
+  };
+
+  const handleConfirmSave = (shouldHide: boolean) => {
+    setShowConfirmModal(false);
+    shouldHideRef.current = shouldHide;
+
     const fileName = `${activeNickname}_2025_recap_${new Date().toISOString().split("T")[0]
       }.png`;
+
     saveAsImage(mainRef, {
       fileName,
       backgroundColor: "#f2f4f6",
       pixelRatio: 3,
-      onBeforeCapture: () => setIsCapturing(true),
-      onAfterCapture: () => setIsCapturing(false),
+      onBeforeCapture: () => {
+        setIsCapturing(true);
+        if (shouldHideRef.current) {
+          setHideNickname(true);
+        }
+        // 블러가 렌더링될 시간 확보
+        return new Promise(resolve => setTimeout(resolve, 150));
+      },
+      onAfterCapture: () => {
+        setIsCapturing(false);
+        setHideNickname(false);
+      },
     });
   };
 
@@ -1263,7 +1284,7 @@ function RecapContent() {
             </button>
             <div className="flex items-center gap-3">
               <button
-                onClick={handleSaveAsImage}
+                onClick={handleSaveClick}
                 disabled={isSaving || isLoading}
                 className="flex items-center gap-2 px-4 py-2 rounded-full bg-brand text-white font-bold text-sm hover:bg-[#1b64da] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
@@ -1276,7 +1297,12 @@ function RecapContent() {
           {/* Header */}
           <div className="mb-4 px-6 md:px-0">
             <h1 className="text-4xl font-bold text-grey-900 md:text-5xl leading-[1.1] md:leading-[1.1]">
-              {activeNickname}님의
+              <span
+                className={hideNickname ? "inline-block blur-[16px] select-none" : ""}
+              >
+                {activeNickname}
+              </span>
+              님의
               <br />
               <span className="text-brand">2025년 DJMAX</span>
             </h1>
@@ -1504,6 +1530,37 @@ function RecapContent() {
           </p>
         </footer>
       </main>
+
+      {/* 닉네임 가리기 확인 모달 */}
+      {showConfirmModal && (
+        <div
+          className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50"
+          onClick={() => setShowConfirmModal(false)}
+        >
+          <div
+            className="bg-white rounded-xl p-5 mx-4 max-w-xs w-full"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p className="text-base font-bold text-grey-900 text-center mb-4">
+              닉네임 가려드릴까여?
+            </p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => handleConfirmSave(false)}
+                className="flex-1 py-2.5 rounded-xl bg-grey-100 text-grey-700 font-bold text-sm hover:bg-grey-200 transition-colors"
+              >
+                아니여
+              </button>
+              <button
+                onClick={() => handleConfirmSave(true)}
+                className="flex-1 py-2.5 rounded-xl bg-brand text-white font-bold text-sm hover:bg-[#1b64da] transition-colors"
+              >
+                넹
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {isSaving && (
         <div
