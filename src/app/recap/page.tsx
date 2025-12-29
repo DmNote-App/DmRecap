@@ -1,6 +1,13 @@
 "use client";
 
-import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
@@ -181,7 +188,7 @@ function TierVideoList({
         await new Promise(requestAnimationFrame);
 
         const playPromises = videos.map((video) =>
-          video.play().catch(() => { })
+          video.play().catch(() => {})
         );
         await Promise.all(playPromises);
 
@@ -231,7 +238,7 @@ function TierVideoList({
       }
     });
 
-    const playPromises = videos.map((video) => video.play().catch(() => { }));
+    const playPromises = videos.map((video) => video.play().catch(() => {}));
     Promise.all(playPromises).then(() => {
       const syncedTime = videos[0]?.currentTime ?? 0;
       videos.forEach((video) => {
@@ -367,14 +374,15 @@ function TopList({
                     <span
                       className={`
                       flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold
-                      ${index === 0
+                      ${
+                        index === 0
                           ? "bg-yellow-100 text-yellow-700"
                           : index === 1
-                            ? "bg-gray-100 text-gray-700"
-                            : index === 2
-                              ? "bg-orange-100 text-orange-700"
-                              : "bg-grey-100 text-grey-500"
-                        }
+                          ? "bg-gray-100 text-gray-700"
+                          : index === 2
+                          ? "bg-orange-100 text-orange-700"
+                          : "bg-grey-100 text-grey-500"
+                      }
                     `}
                     >
                       {index + 1}
@@ -396,10 +404,11 @@ function TopList({
                         <span
                           className={`
                           px-1.5 py-0.5 rounded text-[10px] font-bold tracking-tight
-                          ${item.pattern.startsWith("SC")
+                          ${
+                            item.pattern.startsWith("SC")
                               ? "bg-purple-50 text-purple-600"
                               : "bg-grey-100 text-grey-600"
-                            }
+                          }
                         `}
                         >
                           {item.pattern}
@@ -1163,8 +1172,9 @@ function RecapContent() {
   const [isCapturing, setIsCapturing] = useState(false);
 
   const handleSaveAsImage = () => {
-    const fileName = `${activeNickname}_2025_recap_${new Date().toISOString().split("T")[0]
-      }.png`;
+    const fileName = `${activeNickname}_2025_recap_${
+      new Date().toISOString().split("T")[0]
+    }.png`;
     saveAsImage(mainRef, {
       fileName,
       backgroundColor: "#f2f4f6",
@@ -1184,7 +1194,7 @@ function RecapContent() {
           {/* Navigation */}
           <header className="recap-header mb-12 flex items-center justify-between px-6 md:px-0">
             <button
-              onClick={() => router.push("/recap")}
+              onClick={() => router.push("../")}
               className="flex items-center gap-2 text-grey-600 hover:text-grey-900 transition-colors"
             >
               <ArrowLeft size={24} />
@@ -1256,23 +1266,24 @@ function RecapContent() {
           <div className="flex flex-col gap-4">
             {isLoading && <RecapSkeleton />}
 
-            {isError && !(error instanceof VArchiveError && error.code === 101) && (
-              <div className="glass-card flex flex-col items-center text-center p-12">
-                <p className="text-xl font-bold text-grey-800">
-                  기록을 불러오지 못했어요
-                </p>
-                <p className="mt-2 text-grey-500">
-                  잠시 후 다시 시도해주시겠어요?
-                </p>
-                <button
-                  onClick={() => refetch()}
-                  className="mt-6 flex items-center gap-2 rounded-full bg-grey-800 px-6 py-3 text-white transition-colors hover:bg-black"
-                >
-                  <RefreshCcw size={18} />
-                  다시 시도
-                </button>
-              </div>
-            )}
+            {isError &&
+              !(error instanceof VArchiveError && error.code === 101) && (
+                <div className="glass-card flex flex-col items-center text-center p-12">
+                  <p className="text-xl font-bold text-grey-800">
+                    기록을 불러오지 못했어요
+                  </p>
+                  <p className="mt-2 text-grey-500">
+                    잠시 후 다시 시도해주시겠어요?
+                  </p>
+                  <button
+                    onClick={() => refetch()}
+                    className="mt-6 flex items-center gap-2 rounded-full bg-grey-800 px-6 py-3 text-white transition-colors hover:bg-black"
+                  >
+                    <RefreshCcw size={18} />
+                    다시 시도
+                  </button>
+                </div>
+              )}
 
             {data && (
               <>
@@ -1349,7 +1360,9 @@ function RecapContent() {
                                 <p className="text-xs font-bold text-grey-500">
                                   {button}B DJ POWER
                                 </p>
-                                <p className="text-sm text-grey-400">기록 없음</p>
+                                <p className="text-sm text-grey-400">
+                                  기록 없음
+                                </p>
                               </div>
                             </div>
                           );
@@ -1385,10 +1398,11 @@ function RecapContent() {
                                 <span
                                   className={`
                                 px-1.5 py-0.5 rounded text-[10px] font-bold tracking-tight
-                                ${entry.pattern.startsWith("SC")
-                                      ? "bg-purple-50 text-purple-600"
-                                      : "bg-grey-100 text-grey-600"
-                                    }
+                                ${
+                                  entry.pattern.startsWith("SC")
+                                    ? "bg-purple-50 text-purple-600"
+                                    : "bg-grey-100 text-grey-600"
+                                }
                               `}
                                 >
                                   {entry.pattern}
@@ -1423,8 +1437,9 @@ function RecapContent() {
         {/* Footer */}
         <footer className="recap-footer w-full text-center text-sm text-grey-500 py-5">
           <p>
-            Developed by <span className="font-medium text-grey-700">DM Note</span>{" "}
-            · API provided by{" "}
+            Developed by{" "}
+            <span className="font-medium text-grey-700">DM Note</span> · API
+            provided by{" "}
             <span className="font-medium text-grey-700">V-ARCHIVE</span>
           </p>
         </footer>
