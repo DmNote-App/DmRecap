@@ -3,6 +3,10 @@
 const nextConfig = {
   basePath: "/recap",
   reactStrictMode: true,
+  // useSearchParams() Suspense 경고 비활성화
+  experimental: {
+    missingSuspenseWithCSRBailout: false,
+  },
   images: {
     remotePatterns: [
       {

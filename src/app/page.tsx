@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import dynamic from "next/dynamic";
+import dynamicImport from "next/dynamic";
 
 import NicknameForm from "@/components/NicknameForm";
 import KeyViewerBanner from "@/components/KeyViewerBanner";
@@ -10,7 +10,7 @@ import { useNicknameStore } from "@/store/useNicknameStore";
 import { checkNicknameExists } from "@/lib/varchive";
 
 // 동적 import로 RecapResult 로드 (코드 스플리팅)
-const RecapResult = dynamic(() => import("@/components/RecapResult"), {
+const RecapResult = dynamicImport(() => import("@/components/RecapResult"), {
   loading: () => null,
 });
 
