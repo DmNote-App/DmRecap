@@ -1,6 +1,7 @@
 /** @type {import('next').NextConfig} */
 
 const nextConfig = {
+  basePath: "/recap",
   reactStrictMode: true,
   images: {
     remotePatterns: [
