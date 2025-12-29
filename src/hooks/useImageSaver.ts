@@ -20,6 +20,15 @@ type OriginalImageState = {
   loading: string | null;
 };
 
+type CachedImage =
+  | { kind: "blob"; blob: Blob }
+  | { kind: "dataUrl"; dataUrl: string };
+
+type ExternalImageConversionResult = {
+  originalSrcs: Map<HTMLImageElement, OriginalImageState>;
+  objectUrls: string[];
+};
+
 // 이미지 저장 옵션 타입
 type SaveImageOptions = {
   fileName: string;
@@ -146,6 +155,16 @@ const restoreOriginalImages = (
   });
 };
 
+const revokeObjectUrls = (objectUrls: string[]) => {
+  objectUrls.forEach((url) => {
+    try {
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.warn("Object URL 해제 실패:", error);
+    }
+  });
+};
+
 // 이미지 placeholder (로드 실패 시 사용)
 const IMAGE_PLACEHOLDER =
   "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAiIGhlaWdodD0iODAiIHZpZXdCb3g9IjAgMCA4MCA4MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iODAiIGhlaWdodD0iODAiIGZpbGw9IiNFNUU4RUIiLz48L3N2Zz4=";
@@ -158,16 +177,17 @@ const CAPTURE_SIDE_PADDING = 40;
  */
 export function useImageSaver() {
   const [isSaving, setIsSaving] = useState(false);
-  // 이미지 base64 캐시 (중복 요청 방지)
-  const imageCache = useRef<Map<string, string>>(new Map());
+  // 이미지 Blob 캐시 (중복 요청 방지, base64 메모리 절감)
+  const imageCache = useRef<Map<string, CachedImage>>(new Map());
   const fontEmbedCSSCache = useRef<Map<string, string>>(new Map());
 
-  // 이미지를 프록시를 통해 base64로 변환하는 함수
+  // 이미지를 프록시를 통해 Blob/Object URL로 변환하는 함수
   const convertExternalImages = useCallback(
     async (
       element: HTMLElement
-    ): Promise<Map<HTMLImageElement, OriginalImageState>> => {
+    ): Promise<ExternalImageConversionResult> => {
       const originalSrcs = new Map<HTMLImageElement, OriginalImageState>();
+      const objectUrls: string[] = [];
       const images = element.querySelectorAll("img");
 
       const applyReplacement = (img: HTMLImageElement, dataUrl: string) => {
@@ -175,6 +195,12 @@ export function useImageSaver() {
         img.removeAttribute("srcset");
         img.removeAttribute("sizes");
         img.setAttribute("loading", "eager");
+      };
+
+      const applyBlobReplacement = (img: HTMLImageElement, blob: Blob) => {
+        const objectUrl = URL.createObjectURL(blob);
+        objectUrls.push(objectUrl);
+        applyReplacement(img, objectUrl);
       };
 
       const promises = Array.from(images).map(async (img) => {
@@ -214,7 +240,11 @@ export function useImageSaver() {
         // 캐시에 있으면 재사용 (중복 API 요청 방지)
         const cached = imageCache.current.get(cacheKey);
         if (cached) {
-          applyReplacement(img, cached);
+          if (cached.kind === "blob") {
+            applyBlobReplacement(img, cached.blob);
+          } else {
+            applyReplacement(img, cached.dataUrl);
+          }
           return;
         }
 
@@ -229,27 +259,22 @@ export function useImageSaver() {
 
           const blob = await response.blob();
 
-          // FileReader로 base64 변환
-          const dataUrl = await new Promise<string>((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onloadend = () => resolve(reader.result as string);
-            reader.onerror = reject;
-            reader.readAsDataURL(blob);
-          });
-
           // 캐시에 저장
-          imageCache.current.set(cacheKey, dataUrl);
-          applyReplacement(img, dataUrl);
+          imageCache.current.set(cacheKey, { kind: "blob", blob });
+          applyBlobReplacement(img, blob);
         } catch {
           console.warn("이미지 변환 실패:", sourceUrl);
           // 실패시 회색 placeholder로 대체
-          imageCache.current.set(cacheKey, IMAGE_PLACEHOLDER);
+          imageCache.current.set(cacheKey, {
+            kind: "dataUrl",
+            dataUrl: IMAGE_PLACEHOLDER,
+          });
           applyReplacement(img, IMAGE_PLACEHOLDER);
         }
       });
 
       await Promise.all(promises);
-      return originalSrcs;
+      return { originalSrcs, objectUrls };
     },
     []
   );
@@ -323,7 +348,7 @@ export function useImageSaver() {
         minWidth: element.style.minWidth,
         boxSizing: element.style.boxSizing,
       };
-      let originalSrcs: Map<HTMLImageElement, OriginalImageState> | null = null;
+      let externalImages: ExternalImageConversionResult | null = null;
       let videoReplacements: VideoReplacement[] = [];
 
       try {
@@ -373,9 +398,9 @@ export function useImageSaver() {
           console.warn("비디오 대체 실패, 계속 진행:", videoError);
         }
 
-        // 외부 이미지를 base64로 변환 (병렬 처리됨)
+        // 외부 이미지를 Blob/Object URL로 변환 (병렬 처리됨)
         try {
-          originalSrcs = await convertExternalImages(element);
+          externalImages = await convertExternalImages(element);
         } catch (imgError) {
           console.warn("외부 이미지 변환 실패, 계속 진행:", imgError);
         }
@@ -384,23 +409,39 @@ export function useImageSaver() {
         await waitForFonts();
         const fontEmbedCSS = await getFontEmbedCSS(element, "woff2");
         await new Promise((resolve) => setTimeout(resolve, 100));
+        const shouldBustCache = !(externalImages?.objectUrls.length);
 
         let dataUrl = "";
+        let downloadUrl = "";
+        let revokeDownloadUrl: (() => void) | null = null;
 
         try {
           // html-to-image를 사용하여 캡처 (크로스 플랫폼 호환성 우수)
-          dataUrl = await htmlToImage.toPng(element, {
+          const captureOptions = {
             quality: 1.0,
             pixelRatio: options.pixelRatio ?? 3,
             backgroundColor: options.backgroundColor ?? "#f2f4f6",
             preferredFontFormat: "woff2",
             fontEmbedCSS: fontEmbedCSS || undefined,
-            cacheBust: true,
+            // blob URL은 cache busting 쿼리 추가 시 실패할 수 있음
+            cacheBust: shouldBustCache,
             imagePlaceholder: IMAGE_PLACEHOLDER,
-            filter: (node) => {
+            filter: (node: HTMLElement) => {
               return !(node instanceof HTMLVideoElement);
             },
-          });
+          };
+
+          if (typeof htmlToImage.toBlob === "function") {
+            const blob = await htmlToImage.toBlob(element, captureOptions);
+            if (blob) {
+              downloadUrl = URL.createObjectURL(blob);
+              revokeDownloadUrl = () => URL.revokeObjectURL(downloadUrl);
+            } else {
+              dataUrl = await htmlToImage.toPng(element, captureOptions);
+            }
+          } else {
+            dataUrl = await htmlToImage.toPng(element, captureOptions);
+          }
         } catch (htmlError) {
           console.warn("html-to-image 실패, html2canvas로 재시도:", htmlError);
           const canvas = await html2canvas(element, {
@@ -415,16 +456,27 @@ export function useImageSaver() {
             windowHeight: element.scrollHeight,
             ignoreElements: (node) => node instanceof HTMLVideoElement,
           });
-          dataUrl = canvas.toDataURL("image/png", 1.0);
+          const fallbackBlob = await new Promise<Blob | null>((resolve) => {
+            canvas.toBlob(resolve, "image/png");
+          });
+          if (fallbackBlob) {
+            downloadUrl = URL.createObjectURL(fallbackBlob);
+            revokeDownloadUrl = () => URL.revokeObjectURL(downloadUrl);
+          } else {
+            dataUrl = canvas.toDataURL("image/png", 1.0);
+          }
         }
 
         // 다운로드 링크 생성
         const link = document.createElement("a");
-        link.href = dataUrl;
+        link.href = downloadUrl || dataUrl;
         link.download = options.fileName;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+        if (revokeDownloadUrl) {
+          setTimeout(() => revokeDownloadUrl?.(), 0);
+        }
       } catch (error) {
         console.error("이미지 저장 중 오류가 발생했습니다:", error);
         if (error instanceof Error) {
@@ -435,8 +487,9 @@ export function useImageSaver() {
         alert("이미지 저장에 실패했습니다. 다시 시도해주세요.");
       } finally {
         // 원본 이미지 복원
-        if (originalSrcs) {
-          restoreOriginalImages(originalSrcs);
+        if (externalImages) {
+          restoreOriginalImages(externalImages.originalSrcs);
+          revokeObjectUrls(externalImages.objectUrls);
         }
         // video 요소 복원
         if (videoReplacements.length > 0) {

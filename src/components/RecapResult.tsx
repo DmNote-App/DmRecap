@@ -185,7 +185,7 @@ function TierVideoList({
     const videos = Object.values(videoRefs.current).filter(Boolean);
     if (videos.length === 0) return;
 
-    const playPromises = videos.map((video) => video.play().catch(() => {}));
+    const playPromises = videos.map((video) => video.play().catch(() => { }));
     Promise.all(playPromises).then(() => {
       const masterTime = videos[0]?.currentTime ?? 0;
       videos.forEach((video) => {
@@ -219,7 +219,7 @@ function TierVideoList({
         await new Promise(requestAnimationFrame);
 
         const playPromises = videos.map((video) =>
-          video.play().catch(() => {})
+          video.play().catch(() => { })
         );
         await Promise.all(playPromises);
 
@@ -269,7 +269,7 @@ function TierVideoList({
       }
     });
 
-    const playPromises = videos.map((video) => video.play().catch(() => {}));
+    const playPromises = videos.map((video) => video.play().catch(() => { }));
     Promise.all(playPromises).then(() => {
       const syncedTime = videos[0]?.currentTime ?? 0;
       videos.forEach((video) => {
@@ -436,15 +436,14 @@ function TopList({
                     <span
                       className={`
                       flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold
-                      ${
-                        index === 0
+                      ${index === 0
                           ? "bg-yellow-100 text-yellow-700"
                           : index === 1
-                          ? "bg-gray-100 text-gray-700"
-                          : index === 2
-                          ? "bg-orange-100 text-orange-700"
-                          : "bg-grey-100 text-grey-500"
-                      }
+                            ? "bg-gray-100 text-gray-700"
+                            : index === 2
+                              ? "bg-orange-100 text-orange-700"
+                              : "bg-grey-100 text-grey-500"
+                        }
                     `}
                     >
                       {index + 1}
@@ -466,11 +465,10 @@ function TopList({
                         <span
                           className={`
                           px-1.5 py-0.5 rounded text-[10px] font-bold tracking-tight
-                          ${
-                            item.pattern.startsWith("SC")
+                          ${item.pattern.startsWith("SC")
                               ? "bg-purple-50 text-purple-600"
                               : "bg-grey-100 text-grey-600"
-                          }
+                            }
                         `}
                         >
                           {item.pattern}
@@ -1233,13 +1231,12 @@ function RecapContent() {
   const [isCapturing, setIsCapturing] = useState(false);
 
   const handleSaveAsImage = () => {
-    const fileName = `${activeNickname}_2025_recap_${
-      new Date().toISOString().split("T")[0]
-    }.png`;
+    const fileName = `${activeNickname}_2025_recap_${new Date().toISOString().split("T")[0]
+      }.png`;
     saveAsImage(mainRef, {
       fileName,
       backgroundColor: "#f2f4f6",
-      pixelRatio: 1,
+      pixelRatio: 3,
       onBeforeCapture: () => setIsCapturing(true),
       onAfterCapture: () => setIsCapturing(false),
     });
@@ -1462,11 +1459,10 @@ function RecapContent() {
                                 <span
                                   className={`
                                 px-1.5 py-0.5 rounded text-[10px] font-bold tracking-tight
-                                ${
-                                  entry.pattern.startsWith("SC")
-                                    ? "bg-purple-50 text-purple-600"
-                                    : "bg-grey-100 text-grey-600"
-                                }
+                                ${entry.pattern.startsWith("SC")
+                                      ? "bg-purple-50 text-purple-600"
+                                      : "bg-grey-100 text-grey-600"
+                                    }
                               `}
                                 >
                                   {entry.pattern}
