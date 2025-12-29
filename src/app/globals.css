@@ -60,19 +60,21 @@ html.theme-switching *::after {
   --grey-50: 20 21 22;
   /* Darkest elements (Insets) */
   --grey-100: 45 46 48;
-  /* Button/Input Backgrounds (Must be lighter than surface) */
+  /* Button/Input backgrounds */
   --grey-200: 60 62 66;
   /* Borders / Hover states */
-  --grey-300: 100 104 109;
-  /* Placeholders */
-  --grey-400: 154 160 166;
-  /* Icons, Muted text */
-  --grey-500: 189 193 199;
-  --grey-600: 218 220 224;
-  /* Secondary Text */
-  --grey-700: 230 232 235;
+  --grey-300: 110 114 120;
+  /* Placeholders (Brightened from ~100) */
+  --grey-400: 170 176 184;
+  /* Icons, Muted text (Significant brighten) */
+  --grey-500: 205 210 218;
+  /* Tertiary text (Much brighter) */
+  --grey-600: 228 232 236;
+  /* Secondary Text (Close to white) */
+  --grey-700: 242 244 246;
+  /* Primary-adjacent text */
+  --grey-800: 249 251 253;
   /* High contrast text */
-  --grey-800: 245 247 248;
   --grey-900: 255 255 255;
   /* Pure White */
 
