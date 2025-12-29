@@ -17,6 +17,23 @@ const nextConfig = {
   async headers() {
     return [
       {
+        source: "/_next/static/:path*",
+        headers: [
+          {
+            key: "Access-Control-Allow-Origin",
+            value: "*",
+          },
+          {
+            key: "Access-Control-Allow-Methods",
+            value: "GET, OPTIONS",
+          },
+          {
+            key: "Access-Control-Allow-Headers",
+            value: "Content-Type",
+          },
+        ],
+      },
+      {
         // assets 폴더의 모든 파일에 CORS 헤더 추가
         source: "/assets/:path*",
         headers: [
@@ -27,6 +44,23 @@ const nextConfig = {
           {
             key: "Access-Control-Allow-Methods",
             value: "GET, OPTIONS",
+          },
+        ],
+      },
+      {
+        source: "/fonts/:path*",
+        headers: [
+          {
+            key: "Access-Control-Allow-Origin",
+            value: "*",
+          },
+          {
+            key: "Access-Control-Allow-Methods",
+            value: "GET, OPTIONS",
+          },
+          {
+            key: "Access-Control-Allow-Headers",
+            value: "Content-Type",
           },
         ],
       },
