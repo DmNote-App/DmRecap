@@ -9,7 +9,7 @@ import {
   useState,
 } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import Skeleton, { SkeletonTheme } from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
@@ -1204,7 +1204,6 @@ function RecapSkeleton() {
 }
 
 function RecapContent() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const { nickname, setNickname } = useNicknameStore();
   const nicknameParam = searchParams.get("nickname")?.trim();
