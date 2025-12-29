@@ -54,12 +54,14 @@ function TierVideoList({
   const tierConfigs = useMemo(() => {
     return BUTTONS.map((button) => {
       const tierData = tiers[button];
+      const tierName =
+        typeof tierData?.tier?.name === "string" ? tierData.tier.name : null;
       let videoPath: string | null = null;
       let isBeginner = false;
       let isAmateur = false;
 
-      if (tierData) {
-        const lower = tierData.tier.name.replace(/\s+/g, "").toLowerCase();
+      if (tierName) {
+        const lower = tierName.replace(/\s+/g, "").toLowerCase();
         const tiersList = [
           "iron",
           "bronze",
@@ -80,7 +82,7 @@ function TierVideoList({
         }
       }
 
-      return { button, tierData, videoPath, isBeginner, isAmateur };
+      return { button, tierData, tierName, videoPath, isBeginner, isAmateur };
     });
   }, [tiers]);
 
@@ -334,7 +336,7 @@ function TierVideoList({
       className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2"
     >
       {tierConfigs.map(
-        ({ button, tierData, videoPath, isBeginner, isAmateur }) => (
+        ({ button, tierData, tierName, videoPath, isBeginner, isAmateur }) => (
           <div
             key={button}
             className="flex items-center gap-4 rounded-xl bg-grey-50 p-4 transition-colors hover:bg-grey-100"
@@ -379,10 +381,10 @@ function TierVideoList({
               <p className="text-xs font-bold text-grey-500 mb-0.5">
                 {button}B TIER
               </p>
-              {tierData ? (
+              {tierData && tierName ? (
                 <>
                   <h4 className="truncate text-xl font-bold text-grey-900">
-                    {tierData.tier.name}
+                    {tierName}
                   </h4>
                   <p className="text-base font-bold text-brand">
                     {formatCount(Math.round(tierData.tierPoint))} P
