@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback, RefObject } from "react";
-import html2canvas from "html2canvas";
-import * as htmlToImage from "html-to-image";
+import { domToBlob } from "modern-screenshot";
 
 // 프록시 환경에서는 상대 경로 사용 (동일 출처)
 
@@ -170,39 +169,19 @@ const IMAGE_PLACEHOLDER =
   "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAiIGhlaWdodD0iODAiIHZpZXdCb3g9IjAgMCA4MCA4MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iODAiIGhlaWdodD0iODAiIGZpbGw9IiNFNUU4RUIiLz48L3N2Zz4=";
 const CAPTURE_DESKTOP_MIN_WIDTH = 1024;
 const CAPTURE_SIDE_PADDING = 40;
-const CAPTURE_FONT_FAMILY = '"Pretendard JP"';
-const CAPTURE_FONT_WEIGHTS = [400, 500, 600, 700];
-const CAPTURE_MAX_FONT_WAIT_MS = 2000;
-
-const sleep = (ms: number) =>
-  new Promise<void>((resolve) => setTimeout(resolve, ms));
-
-const stripLocalFontSources = (cssText: string) => {
-  return cssText.replace(/src:\s*([^;]+);/g, (match, srcValue) => {
-    const cleaned = srcValue
-      .split(",")
-      .map((part: string) => part.trim())
-      .filter((part: string) => !part.startsWith("local("))
-      .join(", ");
-    return cleaned ? `src: ${cleaned};` : match;
-  });
-};
 
 /**
  * 이미지 저장 기능을 제공하는 커스텀 훅
- * html-to-image를 사용하여 크로스 플랫폼 호환성 보장 (Windows, Mac, iOS, Android)
+ * modern-screenshot를 사용하여 크로스 브라우저 호환성 보장 (Firefox, Chrome, Safari, iOS, Android)
  */
 export function useImageSaver() {
   const [isSaving, setIsSaving] = useState(false);
   // 이미지 Blob 캐시 (중복 요청 방지, base64 메모리 절감)
   const imageCache = useRef<Map<string, CachedImage>>(new Map());
-  const fontEmbedCSSCache = useRef<Map<string, string>>(new Map());
 
   // 이미지를 프록시를 통해 Blob/Object URL로 변환하는 함수
   const convertExternalImages = useCallback(
-    async (
-      element: HTMLElement
-    ): Promise<ExternalImageConversionResult> => {
+    async (element: HTMLElement): Promise<ExternalImageConversionResult> => {
       const originalSrcs = new Map<HTMLImageElement, OriginalImageState>();
       const objectUrls: string[] = [];
       const images = element.querySelectorAll("img");
@@ -296,33 +275,6 @@ export function useImageSaver() {
     []
   );
 
-  const waitForFonts = useCallback(async () => {
-    if (typeof document === "undefined" || !document.fonts) return;
-
-    try {
-      await document.fonts.ready;
-      await Promise.all(
-        CAPTURE_FONT_WEIGHTS.map((weight) =>
-          document.fonts.load(`${weight} 1em ${CAPTURE_FONT_FAMILY}`)
-        )
-      );
-    } catch (error) {
-      console.warn("폰트 로딩 대기 실패:", error);
-    }
-
-    const startTime = Date.now();
-    while (Date.now() - startTime < CAPTURE_MAX_FONT_WAIT_MS) {
-      const allReady = CAPTURE_FONT_WEIGHTS.every((weight) =>
-        document.fonts.check(`${weight} 1em ${CAPTURE_FONT_FAMILY}`)
-      );
-      if (allReady) break;
-      await sleep(50);
-    }
-
-    await new Promise((resolve) => requestAnimationFrame(() => resolve(null)));
-    await new Promise((resolve) => requestAnimationFrame(() => resolve(null)));
-  }, []);
-
   const waitForImages = useCallback(async (element: HTMLElement) => {
     const images = Array.from(element.querySelectorAll("img"));
     if (images.length === 0) return;
@@ -349,25 +301,6 @@ export function useImageSaver() {
       await Promise.all(decodePromises);
     }
   }, []);
-
-  const getFontEmbedCSSForCapture = useCallback(
-    async (element: HTMLElement) => {
-      const cacheKey = "all-no-local";
-      const cached = fontEmbedCSSCache.current.get(cacheKey);
-      if (cached !== undefined) return cached;
-
-      try {
-        const css = await htmlToImage.getFontEmbedCSS(element);
-        const normalized = stripLocalFontSources(css);
-        fontEmbedCSSCache.current.set(cacheKey, normalized);
-        return normalized;
-      } catch (error) {
-        console.warn("폰트 임베딩 CSS 생성 실패:", error);
-        return "";
-      }
-    },
-    []
-  );
 
   // 요소를 이미지로 저장하는 함수
   const saveAsImage = useCallback(
@@ -406,9 +339,8 @@ export function useImageSaver() {
       const originalLang = rootElement.getAttribute("lang");
       let externalImages: ExternalImageConversionResult | null = null;
       let videoReplacements: VideoReplacement[] = [];
-      const isFirefox =
-        typeof navigator !== "undefined" &&
-        /firefox/i.test(navigator.userAgent);
+      let downloadUrl = "";
+      let revokeDownloadUrl: (() => void) | null = null;
 
       try {
         document.documentElement.style.overflow = "hidden";
@@ -427,10 +359,7 @@ export function useImageSaver() {
         if (!hadCaptureRootAttr) {
           captureTarget.setAttribute(captureRootAttr, "true");
         }
-        rootElement.setAttribute(
-          "lang",
-          document.documentElement.lang || "ko"
-        );
+        rootElement.setAttribute("lang", document.documentElement.lang || "ko");
         rootElement.classList.add("capture-mode");
         await new Promise((resolve) =>
           requestAnimationFrame(() => resolve(null))
@@ -467,100 +396,40 @@ export function useImageSaver() {
 
         // 렌더링 완료 대기
         await waitForImages(captureTarget);
-        await waitForFonts();
-        const fontEmbedCSS = await getFontEmbedCSSForCapture(captureTarget);
-        await new Promise((resolve) => setTimeout(resolve, 100));
-        const shouldBustCache = !(externalImages?.objectUrls.length);
+        await new Promise((resolve) => setTimeout(resolve, 150));
 
-        let dataUrl = "";
-        let downloadUrl = "";
-        let revokeDownloadUrl: (() => void) | null = null;
-
-        const renderWithHtml2Canvas = async () => {
-          const canvas = await html2canvas(captureTarget, {
+        // modern-screenshot를 사용하여 캡처
+        try {
+          const blob = await domToBlob(captureTarget, {
             scale: options.pixelRatio ?? 3,
             backgroundColor: options.backgroundColor ?? "#f2f4f6",
-            useCORS: true,
-            allowTaint: false,
-            logging: false,
-            foreignObjectRendering: isFirefox,
-            onclone: (clonedDocument) => {
-              if (!fontEmbedCSS) return;
-              const style = clonedDocument.createElement("style");
-              style.setAttribute("data-capture-fonts", "true");
-              style.textContent = fontEmbedCSS;
-              const clonedTarget =
-                clonedDocument.querySelector(`[${captureRootAttr}="true"]`);
-              if (clonedTarget) {
-                clonedTarget.insertBefore(style, clonedTarget.firstChild);
-              } else {
-                clonedDocument.head.appendChild(style);
-              }
+            filter: (node) => {
+              // video 요소 제외
+              if (node instanceof HTMLVideoElement) return false;
+              return true;
             },
-            scrollX: 0,
-            scrollY: 0,
-            windowWidth: captureTarget.scrollWidth,
-            windowHeight: captureTarget.scrollHeight,
-            ignoreElements: (node) => node instanceof HTMLVideoElement,
+            // 폰트 임베딩 활성화 (크로스 브라우저 지원)
+            fetch: {
+              requestInit: {
+                mode: "cors",
+              },
+            },
           });
-          const fallbackBlob = await new Promise<Blob | null>((resolve) => {
-            canvas.toBlob(resolve, "image/png");
-          });
-          if (fallbackBlob) {
-            downloadUrl = URL.createObjectURL(fallbackBlob);
+
+          if (blob) {
+            downloadUrl = URL.createObjectURL(blob);
             revokeDownloadUrl = () => URL.revokeObjectURL(downloadUrl);
           } else {
-            dataUrl = canvas.toDataURL("image/png", 1.0);
+            throw new Error("Blob 생성 실패");
           }
-        };
-
-        if (isFirefox) {
-          await renderWithHtml2Canvas();
-        } else {
-          try {
-            // html-to-image를 사용하여 캡처 (크로스 플랫폼 호환성 우수)
-            const captureOptions = {
-              quality: 1.0,
-              pixelRatio: options.pixelRatio ?? 3,
-              backgroundColor: options.backgroundColor ?? "#f2f4f6",
-              fontEmbedCSS: fontEmbedCSS || undefined,
-              // blob URL은 cache busting 쿼리 추가 시 실패할 수 있음
-              cacheBust: shouldBustCache,
-              imagePlaceholder: IMAGE_PLACEHOLDER,
-              filter: (node: HTMLElement) => {
-                return !(node instanceof HTMLVideoElement);
-              },
-            };
-
-            if (typeof htmlToImage.toBlob === "function") {
-              const blob = await htmlToImage.toBlob(
-                captureTarget,
-                captureOptions
-              );
-              if (blob) {
-                downloadUrl = URL.createObjectURL(blob);
-                revokeDownloadUrl = () => URL.revokeObjectURL(downloadUrl);
-              } else {
-                dataUrl = await htmlToImage.toPng(
-                  captureTarget,
-                  captureOptions
-                );
-              }
-            } else {
-              dataUrl = await htmlToImage.toPng(captureTarget, captureOptions);
-            }
-          } catch (htmlError) {
-            console.warn(
-              "html-to-image 실패, html2canvas로 재시도:",
-              htmlError
-            );
-            await renderWithHtml2Canvas();
-          }
+        } catch (captureError) {
+          console.error("이미지 캡처 실패:", captureError);
+          throw captureError;
         }
 
         // 다운로드 링크 생성
         const link = document.createElement("a");
-        link.href = downloadUrl || dataUrl;
+        link.href = downloadUrl;
         link.download = options.fileName;
         document.body.appendChild(link);
         link.click();
@@ -614,13 +483,12 @@ export function useImageSaver() {
         setIsSaving(false);
       }
     },
-    [isSaving, convertExternalImages, waitForImages, waitForFonts, getFontEmbedCSSForCapture]
+    [isSaving, convertExternalImages, waitForImages]
   );
 
   // 캐시 초기화 함수
   const clearCache = useCallback(() => {
     imageCache.current.clear();
-    fontEmbedCSSCache.current.clear();
   }, []);
 
   return {
