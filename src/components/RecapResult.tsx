@@ -373,7 +373,10 @@ function TierVideoList({
                   <Gamepad2 size={32} className="text-[#ff9800]" />
                 </div>
               ) : (
-                <div className="h-full w-full bg-grey-200" />
+                <div className="flex h-full w-full flex-col items-center justify-center gap-1 bg-grey-200 text-grey-400">
+                  <Disc size={24} className="opacity-50" />
+                  <span className="text-[10px] font-bold">NO DATA</span>
+                </div>
               )}
             </div>
 
