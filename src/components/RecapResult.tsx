@@ -1241,8 +1241,10 @@ function RecapContent() {
     setShowConfirmModal(false);
     shouldHideRef.current = shouldHide;
 
-    const fileName = `${activeNickname}_2025_recap_${new Date().toISOString().split("T")[0]
-      }.png`;
+    const dateStr = new Date().toISOString().split("T")[0];
+    const fileName = shouldHide
+      ? `2025_recap_${dateStr}.png`
+      : `${activeNickname}_2025_recap_${dateStr}.png`;
 
     saveAsImage(mainRef, {
       fileName,
