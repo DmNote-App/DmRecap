@@ -1479,7 +1479,7 @@ function RecapContent() {
                                 <p className="text-xs font-bold text-grey-500">
                                   {button}B DJ POWER
                                 </p>
-                                <span className="truncate text-[10px] font-medium text-grey-500 bg-white px-1.5 py-0.5 rounded border border-grey-100">
+                                <span className="text-[10px] font-medium text-grey-500 bg-white px-1.5 py-0.5 rounded border border-grey-100 whitespace-nowrap">
                                   {entry.dlc}
                                 </span>
                               </div>

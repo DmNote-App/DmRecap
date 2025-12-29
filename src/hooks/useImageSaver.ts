@@ -177,6 +177,17 @@ const CAPTURE_MAX_FONT_WAIT_MS = 2000;
 const sleep = (ms: number) =>
   new Promise<void>((resolve) => setTimeout(resolve, ms));
 
+const stripLocalFontSources = (cssText: string) => {
+  return cssText.replace(/src:\s*([^;]+);/g, (match, srcValue) => {
+    const cleaned = srcValue
+      .split(",")
+      .map((part: string) => part.trim())
+      .filter((part: string) => !part.startsWith("local("))
+      .join(", ");
+    return cleaned ? `src: ${cleaned};` : match;
+  });
+};
+
 /**
  * 이미지 저장 기능을 제공하는 커스텀 훅
  * html-to-image를 사용하여 크로스 플랫폼 호환성 보장 (Windows, Mac, iOS, Android)
@@ -339,32 +350,23 @@ export function useImageSaver() {
     }
   }, []);
 
-  const getFontEmbedCSS = useCallback(
-    async (element: HTMLElement, preferredFontFormat: string) => {
-      const cached = fontEmbedCSSCache.current.get(preferredFontFormat);
-      if (cached) return cached;
+  const getFontEmbedCSSForCapture = useCallback(
+    async (element: HTMLElement) => {
+      const cacheKey = "all-no-local";
+      const cached = fontEmbedCSSCache.current.get(cacheKey);
+      if (cached !== undefined) return cached;
 
       try {
-        const css = await htmlToImage.getFontEmbedCSS(element, {
-          preferredFontFormat,
-        });
-        fontEmbedCSSCache.current.set(preferredFontFormat, css);
-        return css;
+        const css = await htmlToImage.getFontEmbedCSS(element);
+        const normalized = stripLocalFontSources(css);
+        fontEmbedCSSCache.current.set(cacheKey, normalized);
+        return normalized;
       } catch (error) {
         console.warn("폰트 임베딩 CSS 생성 실패:", error);
         return "";
       }
     },
     []
-  );
-
-  const getFontEmbedCSSWithFallback = useCallback(
-    async (element: HTMLElement) => {
-      const woff2CSS = await getFontEmbedCSS(element, "woff2");
-      if (woff2CSS) return woff2CSS;
-      return getFontEmbedCSS(element, "woff");
-    },
-    [getFontEmbedCSS]
   );
 
   // 요소를 이미지로 저장하는 함수
@@ -398,6 +400,7 @@ export function useImageSaver() {
         minWidth: element.style.minWidth,
         boxSizing: element.style.boxSizing,
       };
+      const originalLang = element.getAttribute("lang");
       let externalImages: ExternalImageConversionResult | null = null;
       let videoReplacements: VideoReplacement[] = [];
 
@@ -415,6 +418,10 @@ export function useImageSaver() {
         if (options.onBeforeCapture) {
           await options.onBeforeCapture();
         }
+        element.setAttribute(
+          "lang",
+          document.documentElement.lang || "ko"
+        );
         element.classList.add("capture-mode");
         await new Promise((resolve) =>
           requestAnimationFrame(() => resolve(null))
@@ -458,7 +465,7 @@ export function useImageSaver() {
         // 렌더링 완료 대기
         await waitForImages(element);
         await waitForFonts();
-        const fontEmbedCSS = await getFontEmbedCSSWithFallback(element);
+        const fontEmbedCSS = await getFontEmbedCSSForCapture(element);
         await new Promise((resolve) => setTimeout(resolve, 100));
         const shouldBustCache = !(externalImages?.objectUrls.length);
 
@@ -472,7 +479,6 @@ export function useImageSaver() {
             quality: 1.0,
             pixelRatio: options.pixelRatio ?? 3,
             backgroundColor: options.backgroundColor ?? "#f2f4f6",
-            preferredFontFormat: "woff2",
             fontEmbedCSS: fontEmbedCSS || undefined,
             // blob URL은 cache busting 쿼리 추가 시 실패할 수 있음
             cacheBust: shouldBustCache,
@@ -547,6 +553,11 @@ export function useImageSaver() {
           restoreVideos(videoReplacements);
         }
         element.classList.remove("capture-mode");
+        if (originalLang === null) {
+          element.removeAttribute("lang");
+        } else {
+          element.setAttribute("lang", originalLang);
+        }
         if (options.onAfterCapture) {
           await options.onAfterCapture();
         }
@@ -566,13 +577,7 @@ export function useImageSaver() {
         setIsSaving(false);
       }
     },
-    [
-      isSaving,
-      convertExternalImages,
-      waitForImages,
-      waitForFonts,
-      getFontEmbedCSSWithFallback,
-    ]
+    [isSaving, convertExternalImages, waitForImages, waitForFonts, getFontEmbedCSSForCapture]
   );
 
   // 캐시 초기화 함수
