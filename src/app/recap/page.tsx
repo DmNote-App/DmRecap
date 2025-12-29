@@ -669,7 +669,7 @@ function calculateAchievements(data: RecapResult): Achievement[] {
   if (stats.maxRate === 100) {
     achievements.push({
       id: "perfect-accuracy",
-      title: "99%의 정확도, 1%의 운",
+      title: "99% 정확도 1%의 운",
       description: "최고 정확도 100% 달성",
       condition: `최고 정확도 ${formatScore(stats.maxRate)}%`,
       color: "text-amber-600",
