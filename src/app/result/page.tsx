@@ -1188,20 +1188,7 @@ function RecapContent() {
           {/* Navigation */}
           <header className="recap-header mb-12 flex items-center justify-between px-6 md:px-0">
             <button
-              onClick={() => {
-                // 프록시 환경 감지: dm-recap.vercel.app/localhost가 아니면 프록시
-                const isProxyEnv =
-                  !window.location.hostname.includes("dm-recap.vercel.app") &&
-                  !window.location.hostname.includes("localhost") &&
-                  window.location.hostname !== "127.0.0.1";
-                if (isProxyEnv) {
-                  // 프록시 환경: 쿼리 파라미터만 제거 (pathname 유지)
-                  window.location.href = window.location.pathname;
-                } else {
-                  // 직접 접속: 루트로 이동
-                  router.push("/");
-                }
-              }}
+              onClick={() => router.push("/")}
               className="flex items-center gap-2 text-grey-600 hover:text-grey-900 transition-colors"
             >
               <ArrowLeft size={24} />

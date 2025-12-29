@@ -18,15 +18,8 @@ export default function HomePage() {
     setErrorMessage(null);
     setIsChecking(true);
 
-    // 프록시 환경 감지: dm-recap.vercel.app/localhost가 아니면 프록시
-    const isProxyEnv =
-      typeof window !== "undefined" &&
-      !window.location.hostname.includes("dm-recap.vercel.app") &&
-      !window.location.hostname.includes("localhost") &&
-      window.location.hostname !== "127.0.0.1";
-    const targetPath = isProxyEnv
-      ? `?nickname=${encodeURIComponent(value)}` // 프록시: 쿼리만 추가
-      : `recap?nickname=${encodeURIComponent(value)}`; // 직접 접속: recap 경로로
+    // basePath가 /recap이므로 result 경로로 이동 -> /recap/result가 됨
+    const targetPath = `result?nickname=${encodeURIComponent(value)}`;
 
     try {
       const exists = await checkNicknameExists(value);
@@ -39,10 +32,9 @@ export default function HomePage() {
         setIsChecking(false); // 에러일 때만 버튼 되돌리기
       }
     } catch {
-      // API 에러가 발생해도 일단 이동 (recap 페이지에서 다시 시도)
+      // API 에러가 발생해도 일단 이동 (result 페이지에서 다시 시도)
       setNickname(value);
       router.push(targetPath);
-      // 이동하므로 isChecking 유지
     }
   };
 
