@@ -431,69 +431,71 @@ function TopList({
               )}
             </div>
 
-            {topList.length > 0 ? (
-              <div className="flex flex-col gap-2">
-                {topList.map((item, index) => (
-                  <div
-                    key={`${index}-${item.title}`}
-                    className="flex items-center gap-3 rounded-xl bg-white p-3 border border-grey-100"
-                  >
-                    <span
-                      className={`
+            <div className="flex flex-col min-h-[402px]">
+              {topList.length > 0 ? (
+                <div className="flex flex-col gap-2">
+                  {topList.map((item, index) => (
+                    <div
+                      key={`${index}-${item.title}`}
+                      className="flex items-center gap-3 rounded-xl bg-white p-3 border border-grey-100"
+                    >
+                      <span
+                        className={`
                       flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold
                       ${index === 0
-                          ? "bg-yellow-100 text-yellow-700"
-                          : index === 1
-                            ? "bg-gray-100 text-gray-700"
-                            : index === 2
-                              ? "bg-orange-100 text-orange-700"
-                              : "bg-grey-100 text-grey-500"
-                        }
+                            ? "bg-yellow-100 text-yellow-700"
+                            : index === 1
+                              ? "bg-gray-100 text-gray-700"
+                              : index === 2
+                                ? "bg-orange-100 text-orange-700"
+                                : "bg-grey-100 text-grey-500"
+                          }
                     `}
-                    >
-                      {index + 1}
-                    </span>
-                    {/* eslint-disable-next-line @next/next/no-img-element -- keep <img> so capture includes jackets reliably */}
-                    <img
-                      src={`https://v-archive.net/static/images/jackets/${item.title}.jpg`}
-                      alt={item.name}
-                      className="h-12 w-12 shrink-0 rounded-lg object-cover shadow-sm"
-                      loading="lazy"
-                    />
-                    <div className="flex flex-col min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="truncate text-sm font-bold text-grey-900">
-                          {item.name}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2 mt-0.5">
-                        <span
-                          className={`
+                      >
+                        {index + 1}
+                      </span>
+                      {/* eslint-disable-next-line @next/next/no-img-element -- keep <img> so capture includes jackets reliably */}
+                      <img
+                        src={`https://v-archive.net/static/images/jackets/${item.title}.jpg`}
+                        alt={item.name}
+                        className="h-12 w-12 shrink-0 rounded-lg object-cover shadow-sm"
+                        loading="lazy"
+                      />
+                      <div className="flex flex-col min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="truncate text-sm font-bold text-grey-900">
+                            {item.name}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <span
+                            className={`
                           px-1.5 py-0.5 rounded text-[10px] font-bold tracking-tight
                           ${item.pattern.startsWith("SC")
-                              ? "bg-purple-50 text-purple-600"
-                              : "bg-grey-100 text-grey-600"
-                            }
+                                ? "bg-purple-50 text-purple-600"
+                                : "bg-grey-100 text-grey-600"
+                              }
                         `}
-                        >
-                          {item.pattern}
-                        </span>
-                        <span className="text-xs font-medium text-grey-500">
-                          {formatScore(Number(item.score))}% /{" "}
-                          {formatScore(Number(item.rating))} P
-                        </span>
+                          >
+                            {item.pattern}
+                          </span>
+                          <span className="text-xs font-medium text-grey-500">
+                            {formatScore(Number(item.score))}% /{" "}
+                            {formatScore(Number(item.rating))} P
+                          </span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="flex flex-1 items-center justify-center rounded-xl border-2 border-dashed border-grey-200 bg-grey-50/50">
-                <span className="text-sm font-medium text-grey-400">
-                  기록 없음
-                </span>
-              </div>
-            )}
+                  ))}
+                </div>
+              ) : (
+                <div className="flex flex-1 items-center justify-center rounded-xl border-2 border-dashed border-grey-200 bg-grey-50/50">
+                  <span className="text-sm font-medium text-grey-400">
+                    기록 없음
+                  </span>
+                </div>
+              )}
+            </div>
           </div>
         );
       })}
