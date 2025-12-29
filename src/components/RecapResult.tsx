@@ -1303,7 +1303,7 @@ function RecapContent() {
           </header>
 
           {/* Header */}
-          <div className="mb-4 px-6 md:px-0">
+          <div className="recap-title mb-4 px-6 md:px-0">
             <h1 className="text-4xl font-bold text-grey-900 md:text-5xl leading-[1.1] md:leading-[1.1]">
               <span
                 className={hideNickname ? "inline-block blur-[16px] select-none" : ""}
@@ -1526,10 +1526,18 @@ function RecapContent() {
               </>
             )}
           </div>
+          <footer className="recap-footer recap-footer--capture w-full text-center text-sm text-grey-500 py-5">
+            <p>
+              Developed by{" "}
+              <span className="font-medium text-grey-700">DM Note</span> · API
+              provided by{" "}
+              <span className="font-medium text-grey-700">V-ARCHIVE</span>
+            </p>
+          </footer>
         </div>
 
         {/* Footer */}
-        <footer className="recap-footer w-full text-center text-sm text-grey-500 py-5">
+        <footer className="recap-footer recap-footer--page w-full text-center text-sm text-grey-500 py-5">
           <p>
             Developed by{" "}
             <span className="font-medium text-grey-700">DM Note</span> · API

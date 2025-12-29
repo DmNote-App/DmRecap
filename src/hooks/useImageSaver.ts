@@ -375,9 +375,10 @@ export function useImageSaver() {
       if (!elementRef.current || isSaving) return;
 
       setIsSaving(true);
-      const element = elementRef.current;
+      const rootElement = elementRef.current;
       const captureContainer =
-        element.querySelector<HTMLElement>(".recap-container");
+        rootElement.querySelector<HTMLElement>(".recap-container");
+      const captureTarget = captureContainer ?? rootElement;
       const originalScroll = {
         x: window.scrollX,
         y: window.scrollY,
@@ -394,13 +395,13 @@ export function useImageSaver() {
       const originalHtmlOverflow = document.documentElement.style.overflow;
       const scrollbarWidth =
         window.innerWidth - document.documentElement.clientWidth;
-      const originalInlineStyles = {
-        width: element.style.width,
-        maxWidth: element.style.maxWidth,
-        minWidth: element.style.minWidth,
-        boxSizing: element.style.boxSizing,
+      const originalCaptureStyles = {
+        width: captureTarget.style.width,
+        maxWidth: captureTarget.style.maxWidth,
+        minWidth: captureTarget.style.minWidth,
+        boxSizing: captureTarget.style.boxSizing,
       };
-      const originalLang = element.getAttribute("lang");
+      const originalLang = rootElement.getAttribute("lang");
       let externalImages: ExternalImageConversionResult | null = null;
       let videoReplacements: VideoReplacement[] = [];
 
@@ -418,11 +419,11 @@ export function useImageSaver() {
         if (options.onBeforeCapture) {
           await options.onBeforeCapture();
         }
-        element.setAttribute(
+        rootElement.setAttribute(
           "lang",
           document.documentElement.lang || "ko"
         );
-        element.classList.add("capture-mode");
+        rootElement.classList.add("capture-mode");
         await new Promise((resolve) =>
           requestAnimationFrame(() => resolve(null))
         );
@@ -431,18 +432,12 @@ export function useImageSaver() {
         );
 
         if (captureContainer) {
-          const captureContainerWidth =
-            captureContainer.getBoundingClientRect().width;
-          const targetWidth = Math.max(
-            captureContainerWidth,
-            CAPTURE_DESKTOP_MIN_WIDTH
-          );
-          element.style.boxSizing = "border-box";
-          element.style.maxWidth = "none";
-          element.style.minWidth = "0";
-          element.style.width = `${Math.ceil(
-            targetWidth + CAPTURE_SIDE_PADDING * 2
-          )}px`;
+          const targetWidth =
+            CAPTURE_DESKTOP_MIN_WIDTH + CAPTURE_SIDE_PADDING * 2;
+          captureTarget.style.boxSizing = "border-box";
+          captureTarget.style.maxWidth = "none";
+          captureTarget.style.minWidth = "0";
+          captureTarget.style.width = `${Math.ceil(targetWidth)}px`;
         }
 
         // 페이지 스크롤을 맨 위로 이동
@@ -450,22 +445,22 @@ export function useImageSaver() {
 
         // video 요소를 이미지로 대체 (Safari 모바일 대응) - 먼저 실행
         try {
-          videoReplacements = replaceVideosWithImages(element);
+          videoReplacements = replaceVideosWithImages(captureTarget);
         } catch (videoError) {
           console.warn("비디오 대체 실패, 계속 진행:", videoError);
         }
 
         // 외부 이미지를 Blob/Object URL로 변환 (병렬 처리됨)
         try {
-          externalImages = await convertExternalImages(element);
+          externalImages = await convertExternalImages(captureTarget);
         } catch (imgError) {
           console.warn("외부 이미지 변환 실패, 계속 진행:", imgError);
         }
 
         // 렌더링 완료 대기
-        await waitForImages(element);
+        await waitForImages(captureTarget);
         await waitForFonts();
-        const fontEmbedCSS = await getFontEmbedCSSForCapture(element);
+        const fontEmbedCSS = await getFontEmbedCSSForCapture(captureTarget);
         await new Promise((resolve) => setTimeout(resolve, 100));
         const shouldBustCache = !(externalImages?.objectUrls.length);
 
@@ -489,19 +484,25 @@ export function useImageSaver() {
           };
 
           if (typeof htmlToImage.toBlob === "function") {
-            const blob = await htmlToImage.toBlob(element, captureOptions);
+            const blob = await htmlToImage.toBlob(
+              captureTarget,
+              captureOptions
+            );
             if (blob) {
               downloadUrl = URL.createObjectURL(blob);
               revokeDownloadUrl = () => URL.revokeObjectURL(downloadUrl);
             } else {
-              dataUrl = await htmlToImage.toPng(element, captureOptions);
+              dataUrl = await htmlToImage.toPng(
+                captureTarget,
+                captureOptions
+              );
             }
           } else {
-            dataUrl = await htmlToImage.toPng(element, captureOptions);
+            dataUrl = await htmlToImage.toPng(captureTarget, captureOptions);
           }
         } catch (htmlError) {
           console.warn("html-to-image 실패, html2canvas로 재시도:", htmlError);
-          const canvas = await html2canvas(element, {
+          const canvas = await html2canvas(captureTarget, {
             scale: options.pixelRatio ?? 3,
             backgroundColor: options.backgroundColor ?? "#f2f4f6",
             useCORS: true,
@@ -509,8 +510,8 @@ export function useImageSaver() {
             logging: false,
             scrollX: 0,
             scrollY: 0,
-            windowWidth: element.scrollWidth,
-            windowHeight: element.scrollHeight,
+            windowWidth: captureTarget.scrollWidth,
+            windowHeight: captureTarget.scrollHeight,
             ignoreElements: (node) => node instanceof HTMLVideoElement,
           });
           const fallbackBlob = await new Promise<Blob | null>((resolve) => {
@@ -552,11 +553,11 @@ export function useImageSaver() {
         if (videoReplacements.length > 0) {
           restoreVideos(videoReplacements);
         }
-        element.classList.remove("capture-mode");
+        rootElement.classList.remove("capture-mode");
         if (originalLang === null) {
-          element.removeAttribute("lang");
+          rootElement.removeAttribute("lang");
         } else {
-          element.setAttribute("lang", originalLang);
+          rootElement.setAttribute("lang", originalLang);
         }
         if (options.onAfterCapture) {
           await options.onAfterCapture();
@@ -570,10 +571,10 @@ export function useImageSaver() {
         document.body.style.paddingRight = originalBodyStyles.paddingRight;
         document.documentElement.style.overflow = originalHtmlOverflow;
         window.scrollTo(originalScroll.x, originalScroll.y);
-        element.style.width = originalInlineStyles.width;
-        element.style.maxWidth = originalInlineStyles.maxWidth;
-        element.style.minWidth = originalInlineStyles.minWidth;
-        element.style.boxSizing = originalInlineStyles.boxSizing;
+        captureTarget.style.width = originalCaptureStyles.width;
+        captureTarget.style.maxWidth = originalCaptureStyles.maxWidth;
+        captureTarget.style.minWidth = originalCaptureStyles.minWidth;
+        captureTarget.style.boxSizing = originalCaptureStyles.boxSizing;
         setIsSaving(false);
       }
     },
