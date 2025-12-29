@@ -52,12 +52,6 @@ function TierVideoList({
   const isInViewRef = useRef(false);
 
   const tierConfigs = useMemo(() => {
-    // 프록시 환경에서도 비디오가 정상 작동하도록 assetPrefix 사용
-    const assetPrefix =
-      process.env.NODE_ENV === "production"
-        ? "https://dm-recap.vercel.app"
-        : "";
-
     return BUTTONS.map((button) => {
       const tierData = tiers[button];
       let videoPath: string | null = null;
@@ -78,7 +72,7 @@ function TierVideoList({
         ];
         const match = tiersList.find((t) => lower.startsWith(t));
         if (match) {
-          videoPath = `${assetPrefix}/assets/tier/${match}.mp4`;
+          videoPath = `/assets/tier/${match}.mp4`;
         } else {
           if (lower.includes("beginner")) isBeginner = true;
           if (lower.includes("amateur")) isAmateur = true;
@@ -1194,7 +1188,16 @@ function RecapContent() {
           {/* Navigation */}
           <header className="recap-header mb-12 flex items-center justify-between px-6 md:px-0">
             <button
-              onClick={() => router.push("../")}
+              onClick={() => {
+                // 프록시 환경 감지: dm-recap.vercel.app이 아니면 프록시
+                const isProxyEnv =
+                  !window.location.hostname.includes("dm-recap.vercel.app") &&
+                  !window.location.hostname.includes("localhost") &&
+                  window.location.hostname !== "127.0.0.1";
+                router.push(
+                  isProxyEnv ? window.location.pathname.split("?")[0] : "/"
+                );
+              }}
               className="flex items-center gap-2 text-grey-600 hover:text-grey-900 transition-colors"
             >
               <ArrowLeft size={24} />

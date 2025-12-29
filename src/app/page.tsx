@@ -18,10 +18,12 @@ export default function HomePage() {
     setErrorMessage(null);
     setIsChecking(true);
 
-    // 프록시 환경 감지: dmnote.app에서 /recap으로 프록시될 때
+    // 프록시 환경 감지: dm-recap.vercel.app/localhost가 아니면 프록시
     const isProxyEnv =
       typeof window !== "undefined" &&
-      window.location.pathname.includes("/recap");
+      !window.location.hostname.includes("dm-recap.vercel.app") &&
+      !window.location.hostname.includes("localhost") &&
+      window.location.hostname !== "127.0.0.1";
     const targetPath = isProxyEnv
       ? `?nickname=${encodeURIComponent(value)}` // 프록시: 쿼리만 추가
       : `recap?nickname=${encodeURIComponent(value)}`; // 직접 접속: recap 경로로

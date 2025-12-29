@@ -4,9 +4,7 @@ import { useState, useRef, useCallback, RefObject } from "react";
 import html2canvas from "html2canvas";
 import * as htmlToImage from "html-to-image";
 
-// 프록시 환경에서도 올바른 API URL을 사용하도록 assetPrefix 설정
-const API_BASE_URL =
-  process.env.NODE_ENV === "production" ? "https://dm-recap.vercel.app" : "";
+// 프록시 환경에서는 상대 경로 사용 (동일 출처)
 
 // 비디오 대체 정보 타입
 type VideoReplacement = {
@@ -181,10 +179,7 @@ export function useImageSaver() {
 
       const promises = Array.from(images).map(async (img) => {
         const currentSrc = img.currentSrc || img.src;
-        if (
-          !currentSrc ||
-          currentSrc.startsWith("data:")
-        ) {
+        if (!currentSrc || currentSrc.startsWith("data:")) {
           return;
         }
 
@@ -225,9 +220,7 @@ export function useImageSaver() {
 
         try {
           const fetchUrl = shouldProxy
-            ? `${API_BASE_URL}/api/image-proxy?url=${encodeURIComponent(
-                sourceUrl
-              )}`
+            ? `/api/image-proxy?url=${encodeURIComponent(sourceUrl)}`
             : sourceUrl;
           const response = await fetch(fetchUrl);
 
@@ -305,9 +298,8 @@ export function useImageSaver() {
 
       setIsSaving(true);
       const element = elementRef.current;
-      const captureContainer = element.querySelector<HTMLElement>(
-        ".recap-container"
-      );
+      const captureContainer =
+        element.querySelector<HTMLElement>(".recap-container");
       const originalScroll = {
         x: window.scrollX,
         y: window.scrollY,
@@ -348,8 +340,12 @@ export function useImageSaver() {
           await options.onBeforeCapture();
         }
         element.classList.add("capture-mode");
-        await new Promise((resolve) => requestAnimationFrame(() => resolve(null)));
-        await new Promise((resolve) => requestAnimationFrame(() => resolve(null)));
+        await new Promise((resolve) =>
+          requestAnimationFrame(() => resolve(null))
+        );
+        await new Promise((resolve) =>
+          requestAnimationFrame(() => resolve(null))
+        );
 
         if (captureContainer) {
           const captureContainerWidth =
@@ -465,12 +461,7 @@ export function useImageSaver() {
         setIsSaving(false);
       }
     },
-    [
-      isSaving,
-      convertExternalImages,
-      waitForFonts,
-      getFontEmbedCSS,
-    ]
+    [isSaving, convertExternalImages, waitForFonts, getFontEmbedCSS]
   );
 
   // 캐시 초기화 함수
