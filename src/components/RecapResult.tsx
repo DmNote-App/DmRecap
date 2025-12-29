@@ -1250,13 +1250,14 @@ function RecapContent() {
       fileName,
       backgroundColor: "#f2f4f6",
       pixelRatio: 3,
-      onBeforeCapture: () => {
+      onBeforeCapture: async () => {
         setIsCapturing(true);
         if (shouldHideRef.current) {
           setHideNickname(true);
         }
-        // 블러가 렌더링될 시간 확보
-        return new Promise(resolve => setTimeout(resolve, 150));
+        // requestAnimationFrame 2회로 렌더링 보장 (iOS 호환성 개선)
+        await new Promise(resolve => requestAnimationFrame(() => resolve(null)));
+        await new Promise(resolve => requestAnimationFrame(() => resolve(null)));
       },
       onAfterCapture: () => {
         setIsCapturing(false);
@@ -1264,6 +1265,34 @@ function RecapContent() {
       },
     });
   };
+
+  // iOS safe area 색상을 동적으로 관리
+  useEffect(() => {
+    // 기본 배경색
+    const defaultColor = "#f2f4f6";
+    // 모달 배경색 (검은색 반투명일 때)
+    const modalColor = "#000000";
+
+    // theme-color 메타 태그를 찾거나 생성
+    let metaThemeColor = document.querySelector('meta[name="theme-color"]') as HTMLMetaElement | null;
+    if (!metaThemeColor) {
+      metaThemeColor = document.createElement("meta");
+      metaThemeColor.name = "theme-color";
+      document.head.appendChild(metaThemeColor);
+    }
+
+    // 상태에 따라 theme-color 변경
+    if (showConfirmModal) {
+      // 닉네임 확인 모달: 검은색 배경
+      metaThemeColor.content = modalColor;
+    } else if (isSaving) {
+      // 저장 중 오버레이: 기본 배경색
+      metaThemeColor.content = defaultColor;
+    } else {
+      // 기본 상태: 기본 배경색
+      metaThemeColor.content = defaultColor;
+    }
+  }, [showConfirmModal, isSaving]);
 
   return (
     <>
