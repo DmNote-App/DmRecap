@@ -170,6 +170,33 @@ const IMAGE_PLACEHOLDER =
 const CAPTURE_DESKTOP_MIN_WIDTH = 1024;
 const CAPTURE_SIDE_PADDING = 40;
 
+// 메모리 최적화를 위한 캐시 크기 제한
+const MAX_IMAGE_CACHE_SIZE = 50;
+
+// 모바일 감지 함수
+const isMobileDevice = () => {
+  if (typeof navigator === "undefined") return false;
+  return (
+    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+      navigator.userAgent
+    ) ||
+    (typeof window !== "undefined" && window.innerWidth < 768)
+  );
+};
+
+// 저사양 모바일 기기 감지 (메모리 제한 필요)
+const isLowEndDevice = () => {
+  if (typeof navigator === "undefined") return false;
+  // 메모리가 4GB 이하인 기기 탐지 (deviceMemory API)
+  const nav = navigator as Navigator & { deviceMemory?: number };
+  if (nav.deviceMemory && nav.deviceMemory <= 4) return true;
+  // iOS Safari 또는 오래된 모바일 브라우저
+  const isOlderIOS =
+    /iPhone|iPad|iPod/.test(navigator.userAgent) &&
+    !/OS (1[5-9]|[2-9]\d)/.test(navigator.userAgent);
+  return isOlderIOS;
+};
+
 /**
  * 이미지 저장 기능을 제공하는 커스텀 훅
  * modern-screenshot를 사용하여 크로스 브라우저 호환성 보장 (Firefox, Chrome, Safari, iOS, Android)
@@ -255,7 +282,12 @@ export function useImageSaver() {
 
           const blob = await response.blob();
 
-          // 캐시에 저장
+          // 캐시에 저장 (크기 제한 적용)
+          if (imageCache.current.size >= MAX_IMAGE_CACHE_SIZE) {
+            // 가장 오래된 항목 제거
+            const firstKey = imageCache.current.keys().next().value;
+            if (firstKey) imageCache.current.delete(firstKey);
+          }
           imageCache.current.set(cacheKey, { kind: "blob", blob });
           applyBlobReplacement(img, blob);
         } catch {
@@ -394,14 +426,27 @@ export function useImageSaver() {
           console.warn("외부 이미지 변환 실패, 계속 진행:", imgError);
         }
 
-        // 렌더링 완료 대기
+        // 렌더링 완료 대기 (단축된 대기 시간)
         await waitForImages(captureTarget);
-        await new Promise((resolve) => setTimeout(resolve, 150));
+        // 모바일에서는 더 짧은 대기, 데스크톱에서는 안정성을 위해 약간 더 대기
+        await new Promise((resolve) =>
+          setTimeout(resolve, isMobileDevice() ? 50 : 100)
+        );
 
-        // modern-screenshot를 사용하여 캡처
+        // 모바일/저사양 기기에서는 낮은 해상도로 메모리 절약
+        const isMobile = isMobileDevice();
+        const isLowEnd = isLowEndDevice();
+        let effectivePixelRatio = options.pixelRatio ?? 3;
+        if (isLowEnd) {
+          effectivePixelRatio = Math.min(effectivePixelRatio, 1.5);
+        } else if (isMobile) {
+          effectivePixelRatio = Math.min(effectivePixelRatio, 2);
+        }
+
+        // modern-screenshot를 사용하여 캡처 (메모리 최적화 적용)
         try {
           const blob = await domToBlob(captureTarget, {
-            scale: options.pixelRatio ?? 3,
+            scale: effectivePixelRatio,
             backgroundColor: options.backgroundColor ?? "#f2f4f6",
             filter: (node) => {
               // video 요소 제외
@@ -434,8 +479,15 @@ export function useImageSaver() {
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+        // Object URL 즉시 해제 (메모리 절약)
         if (revokeDownloadUrl) {
-          setTimeout(() => revokeDownloadUrl?.(), 0);
+          // 다운로드 완료 후 즉시 해제
+          revokeDownloadUrl();
+        }
+
+        // 모바일에서 캐시 정리 (메모리 절약)
+        if (isMobile) {
+          imageCache.current.clear();
         }
       } catch (error) {
         console.error("이미지 저장 중 오류가 발생했습니다:", error);
