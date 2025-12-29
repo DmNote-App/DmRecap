@@ -18,11 +18,19 @@ export default function HomePage() {
     setErrorMessage(null);
     setIsChecking(true);
 
+    // 프록시 환경 감지: dmnote.app에서 /recap으로 프록시될 때
+    const isProxyEnv =
+      typeof window !== "undefined" &&
+      window.location.pathname.includes("/recap");
+    const targetPath = isProxyEnv
+      ? `?nickname=${encodeURIComponent(value)}` // 프록시: 쿼리만 추가
+      : `recap?nickname=${encodeURIComponent(value)}`; // 직접 접속: recap 경로로
+
     try {
       const exists = await checkNicknameExists(value);
       if (exists) {
         setNickname(value);
-        router.push(`recap?nickname=${encodeURIComponent(value)}`);
+        router.push(targetPath);
         // 성공 시에는 isChecking을 true로 유지 (페이지 이동됨)
       } else {
         setErrorMessage("닉네임을 다시 확인해주세요.");
@@ -31,7 +39,7 @@ export default function HomePage() {
     } catch {
       // API 에러가 발생해도 일단 이동 (recap 페이지에서 다시 시도)
       setNickname(value);
-      router.push(`recap?nickname=${encodeURIComponent(value)}`);
+      router.push(targetPath);
       // 이동하므로 isChecking 유지
     }
   };
@@ -76,12 +84,12 @@ export default function HomePage() {
       {/* Footer */}
       <footer className="absolute bottom-6 left-0 right-0 text-center text-sm text-grey-500">
         <p>
-          Developed by <span className="font-medium text-grey-700">DM Note</span>{" "}
-          · API provided by{" "}
+          Developed by{" "}
+          <span className="font-medium text-grey-700">DM Note</span> · API
+          provided by{" "}
           <span className="font-medium text-grey-700">V-ARCHIVE</span>
         </p>
       </footer>
     </main>
   );
 }
-
