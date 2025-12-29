@@ -76,9 +76,9 @@ export default function HomePage() {
       {/* Footer */}
       <footer className="absolute bottom-6 left-0 right-0 text-center text-sm text-grey-500">
         <p>
-          Developed by <span className="font-medium text-grey-700">DmNote</span>{" "}
+          Developed by <span className="font-medium text-grey-700">DM Note</span>{" "}
           · API provided by{" "}
-          <span className="font-medium text-grey-700">V-Archive</span>
+          <span className="font-medium text-grey-700">V-ARCHIVE</span>
         </p>
       </footer>
     </main>

@@ -1423,9 +1423,9 @@ function RecapContent() {
         {/* Footer */}
         <footer className="recap-footer w-full text-center text-sm text-grey-500 py-5">
           <p>
-            Developed by <span className="font-medium text-grey-700">DmNote</span>{" "}
+            Developed by <span className="font-medium text-grey-700">DM Note</span>{" "}
             · API provided by{" "}
-            <span className="font-medium text-grey-700">V-Archive</span>
+            <span className="font-medium text-grey-700">V-ARCHIVE</span>
           </p>
         </footer>
       </main>
