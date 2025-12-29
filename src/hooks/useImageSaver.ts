@@ -401,6 +401,8 @@ export function useImageSaver() {
         minWidth: captureTarget.style.minWidth,
         boxSizing: captureTarget.style.boxSizing,
       };
+      const captureRootAttr = "data-capture-root";
+      const hadCaptureRootAttr = captureTarget.hasAttribute(captureRootAttr);
       const originalLang = rootElement.getAttribute("lang");
       let externalImages: ExternalImageConversionResult | null = null;
       let videoReplacements: VideoReplacement[] = [];
@@ -421,6 +423,9 @@ export function useImageSaver() {
         }
         if (options.onBeforeCapture) {
           await options.onBeforeCapture();
+        }
+        if (!hadCaptureRootAttr) {
+          captureTarget.setAttribute(captureRootAttr, "true");
         }
         rootElement.setAttribute(
           "lang",
@@ -484,7 +489,13 @@ export function useImageSaver() {
               const style = clonedDocument.createElement("style");
               style.setAttribute("data-capture-fonts", "true");
               style.textContent = fontEmbedCSS;
-              clonedDocument.head.appendChild(style);
+              const clonedTarget =
+                clonedDocument.querySelector(`[${captureRootAttr}="true"]`);
+              if (clonedTarget) {
+                clonedTarget.insertBefore(style, clonedTarget.firstChild);
+              } else {
+                clonedDocument.head.appendChild(style);
+              }
             },
             scrollX: 0,
             scrollY: 0,
@@ -593,6 +604,9 @@ export function useImageSaver() {
         document.body.style.paddingRight = originalBodyStyles.paddingRight;
         document.documentElement.style.overflow = originalHtmlOverflow;
         window.scrollTo(originalScroll.x, originalScroll.y);
+        if (!hadCaptureRootAttr) {
+          captureTarget.removeAttribute(captureRootAttr);
+        }
         captureTarget.style.width = originalCaptureStyles.width;
         captureTarget.style.maxWidth = originalCaptureStyles.maxWidth;
         captureTarget.style.minWidth = originalCaptureStyles.minWidth;
