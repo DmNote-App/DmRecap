@@ -1172,7 +1172,7 @@ function RecapContent() {
     saveAsImage(mainRef, {
       fileName,
       backgroundColor: "#f2f4f6",
-      pixelRatio: 3,
+      pixelRatio: 1,
       onBeforeCapture: () => setIsCapturing(true),
       onAfterCapture: () => setIsCapturing(false),
     });
