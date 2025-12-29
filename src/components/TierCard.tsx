@@ -10,8 +10,8 @@ export default function TierCard({ button, tier, simple = false }: TierCardProps
   if (!tier) {
     return (
       <div className={simple ? "flex items-center gap-2" : "card flex items-center gap-4"}>
-        <div className="h-2 w-2 rounded-full bg-slate-300" />
-        <p className="text-sm text-slate-400">정보 없음</p>
+        <div className="h-2 w-2 rounded-full bg-grey-300" />
+        <p className="text-sm text-grey-400">정보 없음</p>
       </div>
     );
   }
@@ -19,20 +19,20 @@ export default function TierCard({ button, tier, simple = false }: TierCardProps
   return (
     <div className={simple ? "flex items-center justify-between" : "card flex items-center gap-4"}>
       {!simple && (
-        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100 text-sm font-bold text-slate-900">
+        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-grey-100 text-sm font-bold text-grey-900">
           {button}B
         </div>
       )}
 
       <div className="flex-1">
-        {!simple && <p className="text-xs font-semibold text-slate-400">버튼 {button}</p>}
+        {!simple && <p className="text-xs font-semibold text-grey-400">버튼 {button}</p>}
         <div className="flex items-baseline gap-2">
-          <h4 className={`font-bold ${simple ? 'text-lg text-grey-900' : 'text-lg text-ink'}`}>
+          <h4 className={`font-bold ${simple ? "text-lg text-grey-900" : "text-lg text-grey-900"}`}>
             {tier.tier.name}
           </h4>
         </div>
         {!simple && (
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-grey-500">
             {tier.tierPoint.toFixed(0)} P
           </p>
         )}

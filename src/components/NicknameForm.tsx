@@ -39,8 +39,8 @@ export default function NicknameForm({
           <Search size={20} />
         </div>
         <input
-          className={`w-full rounded-2xl border bg-white px-6 py-3.5 pl-12 text-lg font-semibold text-grey-900 transition-colors placeholder:text-grey-400 focus:outline-none focus:ring-1 ${errorMessage
-            ? "border-red-400 focus:border-red-500 focus:ring-red-500"
+          className={`w-full rounded-2xl border bg-surface px-6 py-3.5 pl-12 text-lg font-semibold text-grey-900 transition-colors placeholder:text-grey-400 focus:outline-none focus:ring-1 ${errorMessage
+            ? "border-red-400 focus:border-red-500 focus:ring-red-500 dark:border-red-500 dark:focus:border-red-400 dark:focus:ring-red-400"
             : "border-grey-200 focus:border-brand focus:ring-brand"
             }`}
           value={value}
@@ -52,7 +52,7 @@ export default function NicknameForm({
       </div>
 
       {errorMessage && (
-        <div className="flex items-center gap-2 text-red-500 mt-1">
+        <div className="flex items-center gap-2 text-red-500 dark:text-red-400 mt-1">
           <AlertCircle size={16} className="shrink-0" />
           <span className="text-sm font-medium">{errorMessage}</span>
         </div>

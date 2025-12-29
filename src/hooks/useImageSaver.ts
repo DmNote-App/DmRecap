@@ -53,7 +53,7 @@ const replaceVideosWithImages = (element: HTMLElement): VideoReplacement[] => {
         const placeholder = document.createElement("div");
         placeholder.style.width = "100%";
         placeholder.style.height = "100%";
-        placeholder.style.backgroundColor = "#1a1a1a";
+        placeholder.style.backgroundColor = getVideoPlaceholderColor();
         placeholder.style.borderRadius = "inherit";
         placeholder.setAttribute("data-video-placeholder", "true");
 
@@ -164,9 +164,55 @@ const revokeObjectUrls = (objectUrls: string[]) => {
   });
 };
 
-// 이미지 placeholder (로드 실패 시 사용)
-const IMAGE_PLACEHOLDER =
-  "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAiIGhlaWdodD0iODAiIHZpZXdCb3g9IjAgMCA4MCA4MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iODAiIGhlaWdodD0iODAiIGZpbGw9IiNFNUU4RUIiLz48L3N2Zz4=";
+const toRgbString = (value: string) => {
+  const trimmed = value.trim();
+  if (!trimmed) return "";
+  if (trimmed.startsWith("rgb")) return trimmed;
+  const normalized = trimmed.includes(",")
+    ? trimmed
+    : trimmed.split(/\s+/).join(", ");
+  return `rgb(${normalized})`;
+};
+
+const getCssVarColor = (name: string, fallback: string) => {
+  if (typeof window === "undefined") return fallback;
+  const raw = getComputedStyle(document.documentElement)
+    .getPropertyValue(name)
+    .trim();
+  return raw ? toRgbString(raw) : fallback;
+};
+
+const getCaptureBackgroundColor = (element: HTMLElement) => {
+  const elementBg = getComputedStyle(element).backgroundColor;
+  if (elementBg && elementBg !== "transparent" && elementBg !== "rgba(0, 0, 0, 0)") {
+    return elementBg;
+  }
+  const bodyBg = getComputedStyle(document.body).backgroundColor;
+  return bodyBg || "rgb(242, 244, 246)";
+};
+
+const buildPlaceholderDataUrl = (fill: string) => {
+  const svg = `<svg width=\"80\" height=\"80\" viewBox=\"0 0 80 80\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\"><rect width=\"80\" height=\"80\" fill=\"${fill}\"/></svg>`;
+  if (typeof window === "undefined" || typeof window.btoa !== "function") {
+    return "";
+  }
+  return `data:image/svg+xml;base64,${window.btoa(svg)}`;
+};
+
+const getImagePlaceholderDataUrl = () => {
+  const fallback =
+    typeof document !== "undefined" && document.body
+      ? getCaptureBackgroundColor(document.body)
+      : "rgb(242, 244, 246)";
+  const fill = getCssVarColor("--grey-200", fallback);
+  const dataUrl = buildPlaceholderDataUrl(fill);
+  return dataUrl || "";
+};
+
+const getVideoPlaceholderColor = () =>
+  getCssVarColor("--video-placeholder", "rgb(26, 26, 26)");
+
+// 캡처 옵션 값
 const CAPTURE_DESKTOP_MIN_WIDTH = 1024;
 const CAPTURE_SIDE_PADDING = 40;
 
@@ -212,6 +258,7 @@ export function useImageSaver() {
       const originalSrcs = new Map<HTMLImageElement, OriginalImageState>();
       const objectUrls: string[] = [];
       const images = element.querySelectorAll("img");
+      const placeholderDataUrl = getImagePlaceholderDataUrl();
 
       const applyReplacement = (img: HTMLImageElement, dataUrl: string) => {
         img.src = dataUrl;
@@ -295,9 +342,11 @@ export function useImageSaver() {
           // 실패시 회색 placeholder로 대체
           imageCache.current.set(cacheKey, {
             kind: "dataUrl",
-            dataUrl: IMAGE_PLACEHOLDER,
+            dataUrl: placeholderDataUrl,
           });
-          applyReplacement(img, IMAGE_PLACEHOLDER);
+          if (placeholderDataUrl) {
+            applyReplacement(img, placeholderDataUrl);
+          }
         }
       });
 
@@ -447,7 +496,9 @@ export function useImageSaver() {
         try {
           const blob = await domToBlob(captureTarget, {
             scale: effectivePixelRatio,
-            backgroundColor: options.backgroundColor ?? "#f2f4f6",
+            backgroundColor:
+              options.backgroundColor ??
+              getCaptureBackgroundColor(captureTarget),
             filter: (node) => {
               // video 요소 제외
               if (node instanceof HTMLVideoElement) return false;

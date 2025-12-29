@@ -9,7 +9,7 @@ import {
   useState,
 } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import Skeleton, { SkeletonTheme } from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
@@ -365,12 +365,12 @@ function TierVideoList({
                   className="h-full w-full object-cover"
                 />
               ) : isBeginner ? (
-                <div className="flex h-full w-full flex-col items-center justify-center bg-[#e8f5e9]">
-                  <Sprout size={32} className="text-[#4caf50]" />
+                <div className="flex h-full w-full flex-col items-center justify-center bg-emerald-50 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-200">
+                  <Sprout size={32} />
                 </div>
               ) : isAmateur ? (
-                <div className="flex h-full w-full flex-col items-center justify-center bg-[#fff3e0]">
-                  <Gamepad2 size={32} className="text-[#ff9800]" />
+                <div className="flex h-full w-full flex-col items-center justify-center bg-orange-50 text-orange-600 dark:bg-orange-500/20 dark:text-orange-200">
+                  <Gamepad2 size={32} />
                 </div>
               ) : (
                 <div className="flex h-full w-full flex-col items-center justify-center gap-1 bg-grey-200 text-grey-400">
@@ -425,7 +425,7 @@ function TopList({
                 <span className="text-brand">{button}B</span> TOP 5
               </h3>
               {tierData && (
-                <span className="text-xs font-bold text-grey-500 bg-white px-2 py-1 rounded-full border border-grey-100">
+                <span className="text-xs font-bold text-grey-500 bg-surface px-2 py-1 rounded-full border border-grey-100">
                   Top 50 합계: {Math.round(tierData.top50sum).toLocaleString()}
                 </span>
               )}
@@ -437,17 +437,17 @@ function TopList({
                   {topList.map((item, index) => (
                     <div
                       key={`${index}-${item.title}`}
-                      className="flex items-center gap-3 rounded-xl bg-white p-3 border border-grey-100"
+                      className="flex items-center gap-3 rounded-xl bg-surface p-3 border border-grey-100"
                     >
                       <span
                         className={`
                       flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold
                       ${index === 0
-                            ? "bg-yellow-100 text-yellow-700"
+                            ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-500/20 dark:text-yellow-200"
                             : index === 1
-                              ? "bg-gray-100 text-gray-700"
+                              ? "bg-grey-100 text-grey-700"
                               : index === 2
-                                ? "bg-orange-100 text-orange-700"
+                                ? "bg-orange-100 text-orange-700 dark:bg-orange-500/20 dark:text-orange-200"
                                 : "bg-grey-100 text-grey-500"
                           }
                     `}
@@ -472,7 +472,7 @@ function TopList({
                             className={`
                           px-1.5 py-0.5 rounded text-[10px] font-bold tracking-tight
                           ${item.pattern.startsWith("SC")
-                                ? "bg-purple-50 text-purple-600"
+                                ? "bg-purple-50 text-purple-600 dark:bg-purple-500/20 dark:text-purple-200"
                                 : "bg-grey-100 text-grey-600"
                               }
                         `}
@@ -608,8 +608,8 @@ function PlayStyleLineChart({
       >
         <defs>
           <linearGradient id="lineGradient" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#3182f6" stopOpacity="0.5" />
-            <stop offset="100%" stopColor="#3182f6" stopOpacity="0.05" />
+            <stop offset="0%" stopColor="rgb(var(--brand))" stopOpacity="0.5" />
+            <stop offset="100%" stopColor="rgb(var(--brand))" stopOpacity="0.05" />
           </linearGradient>
           <filter id="lineGlow">
             <feGaussianBlur stdDeviation="2" result="coloredBlur" />
@@ -630,7 +630,7 @@ function PlayStyleLineChart({
               y1={y}
               x2={chartXEnd}
               y2={y}
-              stroke="#d1d6db"
+              stroke="rgb(var(--grey-300))"
               strokeWidth="1"
               strokeDasharray={level === 0 ? "" : "4 4"}
             />
@@ -656,7 +656,7 @@ function PlayStyleLineChart({
           <path
             d={pathData}
             fill="none"
-            stroke="#3182f6"
+            stroke="rgb(var(--brand))"
             strokeWidth="3"
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -670,7 +670,7 @@ function PlayStyleLineChart({
             transition={{ duration: 1, ease: "easeInOut" }}
             d={pathData}
             fill="none"
-            stroke="#3182f6"
+            stroke="rgb(var(--brand))"
             strokeWidth="3"
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -692,7 +692,7 @@ function PlayStyleLineChart({
               fontSize={12}
               fontWeight={700}
               fontFamily='"Pretendard JP", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif'
-              fill="#8b95a1"
+              fill="rgb(var(--grey-500))"
             >
               {p.btn}B
             </text>
@@ -703,8 +703,8 @@ function PlayStyleLineChart({
                 cx={p.x}
                 cy={p.y}
                 r={5}
-                fill="white"
-                stroke="#3182f6"
+                fill="rgb(var(--surface))"
+                stroke="rgb(var(--brand))"
                 strokeWidth="2.5"
               />
             ) : (
@@ -719,8 +719,8 @@ function PlayStyleLineChart({
                 }}
                 cx={p.x}
                 cy={p.y}
-                fill="white"
-                stroke="#3182f6"
+                fill="rgb(var(--surface))"
+                stroke="rgb(var(--brand))"
                 strokeWidth="2.5"
               />
             )}
@@ -752,8 +752,8 @@ function calculateAchievements(data: RecapResult): Achievement[] {
       title: "99% 정확도 1%의 운",
       description: "최고 정확도 100% 달성",
       condition: `최고 정확도 ${formatScore(stats.maxRate)}%`,
-      color: "text-amber-600",
-      bgColor: "bg-amber-50",
+      color: "text-amber-600 dark:text-amber-200",
+      bgColor: "bg-amber-50 dark:bg-amber-500/20",
     });
   }
 
@@ -764,8 +764,8 @@ function calculateAchievements(data: RecapResult): Achievement[] {
       title: "완벽 주의자",
       description: "퍼펙트 100곡 이상 달성",
       condition: `퍼펙트 플레이 ${formatCount(stats.perfectCount)}곡`,
-      color: "text-rose-600",
-      bgColor: "bg-rose-50",
+      color: "text-rose-600 dark:text-rose-200",
+      bgColor: "bg-rose-50 dark:bg-rose-500/20",
     });
   } else if (stats.perfectCount === 1) {
     achievements.push({
@@ -773,8 +773,8 @@ function calculateAchievements(data: RecapResult): Achievement[] {
       title: "첫 퍼펙트의 감동",
       description: "첫 번째 퍼펙트 달성",
       condition: `퍼펙트 플레이 ${stats.perfectCount}곡`,
-      color: "text-pink-600",
-      bgColor: "bg-pink-50",
+      color: "text-pink-600 dark:text-pink-200",
+      bgColor: "bg-pink-50 dark:bg-pink-500/20",
     });
   }
 
@@ -785,8 +785,8 @@ function calculateAchievements(data: RecapResult): Achievement[] {
       title: "BREAK가 뭐죠?",
       description: "맥스 콤보 500곡 이상 달성",
       condition: `맥스 콤보 ${formatCount(stats.maxComboCount)}곡`,
-      color: "text-purple-600",
-      bgColor: "bg-purple-50",
+      color: "text-purple-600 dark:text-purple-200",
+      bgColor: "bg-purple-50 dark:bg-purple-500/20",
     });
   } else if (stats.maxComboCount >= 200) {
     achievements.push({
@@ -794,8 +794,8 @@ function calculateAchievements(data: RecapResult): Achievement[] {
       title: "놓치지 않는 집중력",
       description: "맥스 콤보 200곡 이상 달성",
       condition: `맥스 콤보 ${formatCount(stats.maxComboCount)}곡`,
-      color: "text-violet-600",
-      bgColor: "bg-violet-50",
+      color: "text-violet-600 dark:text-violet-200",
+      bgColor: "bg-violet-50 dark:bg-violet-500/20",
     });
   } else if (stats.maxComboCount >= 50) {
     achievements.push({
@@ -803,8 +803,8 @@ function calculateAchievements(data: RecapResult): Achievement[] {
       title: "안정적인 플레이어",
       description: "맥스 콤보 50곡 이상 달성",
       condition: `맥스 콤보 ${formatCount(stats.maxComboCount)}곡`,
-      color: "text-indigo-600",
-      bgColor: "bg-indigo-50",
+      color: "text-indigo-600 dark:text-indigo-200",
+      bgColor: "bg-indigo-50 dark:bg-indigo-500/20",
     });
   }
 
@@ -816,10 +816,22 @@ function calculateAchievements(data: RecapResult): Achievement[] {
     8: "꿈을 꾸는 8버튼 문어",
   };
   const buttonColors: Record<number, { color: string; bgColor: string }> = {
-    4: { color: "text-green-600", bgColor: "bg-green-50" },
-    5: { color: "text-cyan-600", bgColor: "bg-cyan-50" },
-    6: { color: "text-blue-600", bgColor: "bg-blue-50" },
-    8: { color: "text-orange-600", bgColor: "bg-orange-50" },
+    4: {
+      color: "text-green-600 dark:text-green-200",
+      bgColor: "bg-green-50 dark:bg-green-500/20",
+    },
+    5: {
+      color: "text-cyan-600 dark:text-cyan-200",
+      bgColor: "bg-cyan-50 dark:bg-cyan-500/20",
+    },
+    6: {
+      color: "text-blue-600 dark:text-blue-200",
+      bgColor: "bg-blue-50 dark:bg-blue-500/20",
+    },
+    8: {
+      color: "text-orange-600 dark:text-orange-200",
+      bgColor: "bg-orange-50 dark:bg-orange-500/20",
+    },
   };
 
   const maxButton = BUTTONS.reduce(
@@ -851,7 +863,7 @@ function calculateAchievements(data: RecapResult): Achievement[] {
       description: "기록 2,000개 이상 등록",
       condition: `등록 기록 ${formatCount(stats.totalRecords)}개`,
       color: "text-brand",
-      bgColor: "bg-blue-50",
+      bgColor: "bg-blue-50 dark:bg-blue-500/20",
     });
   } else if (stats.totalRecords >= 500) {
     achievements.push({
@@ -859,8 +871,8 @@ function calculateAchievements(data: RecapResult): Achievement[] {
       title: "성실한 유저",
       description: "기록 500개 이상 등록",
       condition: `등록 기록 ${formatCount(stats.totalRecords)}개`,
-      color: "text-sky-600",
-      bgColor: "bg-sky-50",
+      color: "text-sky-600 dark:text-sky-200",
+      bgColor: "bg-sky-50 dark:bg-sky-500/20",
     });
   } else if (stats.totalRecords >= 100) {
     achievements.push({
@@ -868,8 +880,8 @@ function calculateAchievements(data: RecapResult): Achievement[] {
       title: "소중한 입문자",
       description: "기록 100개 이상 등록",
       condition: `등록 기록 ${formatCount(stats.totalRecords)}개`,
-      color: "text-teal-600",
-      bgColor: "bg-teal-50",
+      color: "text-teal-600 dark:text-teal-200",
+      bgColor: "bg-teal-50 dark:bg-teal-500/20",
     });
   }
 
@@ -884,8 +896,8 @@ function calculateAchievements(data: RecapResult): Achievement[] {
       title: "정상에 서다",
       description: "그랜드 마스터 티어 달성",
       condition: "Grand Master",
-      color: "text-yellow-600",
-      bgColor: "bg-yellow-50",
+      color: "text-yellow-600 dark:text-yellow-200",
+      bgColor: "bg-yellow-50 dark:bg-yellow-500/20",
     });
   } else if (
     tierNames.some((name) => name.includes("master") && !name.includes("grand"))
@@ -895,8 +907,8 @@ function calculateAchievements(data: RecapResult): Achievement[] {
       title: "마스터의 경지",
       description: "마스터 티어 달성",
       condition: "Master",
-      color: "text-red-600",
-      bgColor: "bg-red-50",
+      color: "text-red-600 dark:text-red-200",
+      bgColor: "bg-red-50 dark:bg-red-500/20",
     });
   } else if (tierNames.some((name) => name.includes("diamond"))) {
     achievements.push({
@@ -904,8 +916,8 @@ function calculateAchievements(data: RecapResult): Achievement[] {
       title: "반짝이는 실력",
       description: "다이아몬드 티어 달성",
       condition: "Diamond",
-      color: "text-cyan-600",
-      bgColor: "bg-cyan-50",
+      color: "text-cyan-600 dark:text-cyan-200",
+      bgColor: "bg-cyan-50 dark:bg-cyan-500/20",
     });
   } else if (tierNames.some((name) => name.includes("platinum"))) {
     achievements.push({
@@ -913,8 +925,8 @@ function calculateAchievements(data: RecapResult): Achievement[] {
       title: "상위권의 증표",
       description: "플래티넘 티어 달성",
       condition: "Platinum",
-      color: "text-emerald-600",
-      bgColor: "bg-emerald-50",
+      color: "text-emerald-600 dark:text-emerald-200",
+      bgColor: "bg-emerald-50 dark:bg-emerald-500/20",
     });
   }
 
@@ -928,8 +940,8 @@ function calculateAchievements(data: RecapResult): Achievement[] {
       title: "버튼 컬렉터",
       description: "4개 버튼 모두 플레이",
       condition: "4B, 5B, 6B, 8B 모두 기록",
-      color: "text-fuchsia-600",
-      bgColor: "bg-fuchsia-50",
+      color: "text-fuchsia-600 dark:text-fuchsia-200",
+      bgColor: "bg-fuchsia-50 dark:bg-fuchsia-500/20",
     });
   }
 
@@ -957,42 +969,42 @@ function RecapGrid({ data }: { data: RecapResult }) {
       value: `${formatScore(stats.averageRate)}`,
       unit: "%",
       subtitle: "전체 기록 평균",
-      accentColor: "text-green-500",
+      accentColor: "text-green-500 dark:text-green-300",
     },
     {
       title: "최고 정확도",
       value: `${formatScore(stats.maxRate)}`,
       unit: "%",
       subtitle: "Best Rate",
-      accentColor: "text-amber-500",
+      accentColor: "text-amber-500 dark:text-amber-300",
     },
     {
       title: "맥스 콤보",
       value: `${formatCount(stats.maxComboCount)}`,
       unit: "곡",
       subtitle: "BREAK 없이 클리어",
-      accentColor: "text-purple-500",
+      accentColor: "text-purple-500 dark:text-purple-300",
     },
     {
       title: "퍼펙트 플레이",
       value: `${formatCount(stats.perfectCount)}`,
       unit: "곡",
       subtitle: "짜릿한 100% 달성",
-      accentColor: "text-rose-500",
+      accentColor: "text-rose-500 dark:text-rose-300",
     },
     {
       title: "티어 포인트 높은 팩",
       value: dlcValue,
       unit: "",
       subtitle: dlcSubtitle,
-      accentColor: "text-indigo-500",
+      accentColor: "text-indigo-500 dark:text-indigo-300",
     },
   ];
 
   return (
     <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
       {cards.map((card, index) => (
-        <div key={index} className="ui-card hover:bg-white">
+        <div key={index} className="ui-card hover:bg-surface-hover">
           <p className="text-sm font-bold text-grey-500">{card.title}</p>
           <div className="mt-2 flex items-baseline gap-1">
             <h3 className={`text-3xl font-bold ${card.accentColor}`}>
@@ -1011,7 +1023,10 @@ function RecapGrid({ data }: { data: RecapResult }) {
 
 function RecapSkeleton() {
   return (
-    <SkeletonTheme baseColor="#f2f4f6" highlightColor="#ffffff">
+    <SkeletonTheme
+      baseColor="rgb(var(--skeleton-base))"
+      highlightColor="rgb(var(--skeleton-highlight))"
+    >
       <div className="flex flex-col gap-4">
         {/* Metric Cards Skeleton - matches RecapGrid exactly */}
         <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -1097,7 +1112,7 @@ function RecapSkeleton() {
                       <p className="text-xs font-bold text-grey-500">
                         <Skeleton width={85} />
                       </p>
-                      <span className="text-[10px] font-medium text-grey-500 bg-white px-1.5 py-0.5 rounded border border-grey-100 opacity-50">
+                      <span className="text-[10px] font-medium text-grey-500 bg-surface px-1.5 py-0.5 rounded border border-grey-100 opacity-50">
                         <Skeleton width={30} />
                       </span>
                     </div>
@@ -1167,7 +1182,7 @@ function RecapSkeleton() {
                     <h3 className="text-lg font-bold text-grey-900 flex items-center gap-2">
                       <Skeleton width={85} />
                     </h3>
-                    <span className="text-xs font-bold text-grey-500 bg-white px-2 py-1 rounded-full border border-grey-100 opacity-50">
+                    <span className="text-xs font-bold text-grey-500 bg-surface px-2 py-1 rounded-full border border-grey-100 opacity-50">
                       <Skeleton width={100} />
                     </span>
                   </div>
@@ -1175,7 +1190,7 @@ function RecapSkeleton() {
                     {Array.from({ length: 5 }).map((_, j) => (
                       <div
                         key={j}
-                        className="flex items-center gap-3 rounded-xl bg-white p-3 border border-grey-100"
+                        className="flex items-center gap-3 rounded-xl bg-surface p-3 border border-grey-100"
                       >
                         {/* h-6 w-6 = 24px circle */}
                         <Skeleton circle width={24} height={24} />
@@ -1213,6 +1228,7 @@ function RecapSkeleton() {
 }
 
 function RecapContent() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const { nickname, setNickname } = useNicknameStore();
   const nicknameParam = searchParams.get("nickname")?.trim();
@@ -1259,7 +1275,6 @@ function RecapContent() {
 
     saveAsImage(mainRef, {
       fileName,
-      backgroundColor: "#f2f4f6",
       pixelRatio: 3,
       onBeforeCapture: async () => {
         setIsCapturing(true);
@@ -1281,15 +1296,14 @@ function RecapContent() {
     <>
       <main
         ref={mainRef}
-        className="recap-root min-h-screen w-full bg-[#f2f4f6] pt-10"
+        className="recap-root min-h-screen w-full bg-canvas pt-10"
       >
         <div className="recap-container mx-auto max-w-5xl px-0 md:px-6">
           {/* Navigation */}
           <header className="recap-header mb-12 flex items-center justify-between px-6 md:px-0">
             <button
               onClick={() => {
-                // 쿼리 파라미터만 제거하고 현재 pathname 유지
-                window.location.href = window.location.pathname;
+                router.replace("/");
               }}
               className="flex items-center gap-2 text-grey-600 hover:text-grey-900 transition-colors"
             >
@@ -1300,7 +1314,7 @@ function RecapContent() {
               <button
                 onClick={handleSaveClick}
                 disabled={isSaving || isLoading}
-                className="flex items-center gap-2 px-4 py-2 rounded-full bg-brand text-white font-bold text-sm hover:bg-[#1b64da] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center gap-2 px-4 py-2 rounded-full bg-brand text-white font-bold text-sm hover:bg-brand-strong transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Download size={18} />
                 <span>{isSaving ? "저장 중..." : "저장"}</span>
@@ -1327,7 +1341,10 @@ function RecapContent() {
             {(isLoading || data) && (
               <div className="mt-4 flex flex-wrap gap-2">
                 {isLoading ? (
-                  <SkeletonTheme baseColor="#e2e4e8" highlightColor="#f2f4f6">
+                  <SkeletonTheme
+                    baseColor="rgb(var(--skeleton-base))"
+                    highlightColor="rgb(var(--skeleton-highlight))"
+                  >
                     {Array.from({ length: 3 }).map((_, i) => (
                       <span
                         key={i}
@@ -1378,7 +1395,7 @@ function RecapContent() {
                   </p>
                   <button
                     onClick={() => refetch()}
-                    className="mt-6 flex items-center gap-2 rounded-full bg-grey-800 px-6 py-3 text-white transition-colors hover:bg-black"
+                    className="mt-6 flex items-center gap-2 rounded-full bg-grey-800 px-6 py-3 text-white transition-colors hover:bg-black dark:bg-grey-200 dark:text-grey-900 dark:hover:bg-grey-300"
                   >
                     <RefreshCcw size={18} />
                     다시 시도
@@ -1421,7 +1438,7 @@ function RecapContent() {
                                   }}
                                   viewport={{ once: true }}
                                   transition={{ duration: 1, ease: "circOut" }}
-                                  className="h-full rounded-full bg-brand group-hover:bg-[#1b64da] transition-colors"
+                                  className="h-full rounded-full bg-brand group-hover:bg-brand-strong transition-colors"
                                 />
                               )}
                             </div>
@@ -1485,7 +1502,7 @@ function RecapContent() {
                                 <p className="text-xs font-bold text-grey-500">
                                   {button}B DJ POWER
                                 </p>
-                                <span className="text-[10px] font-medium text-grey-500 bg-white px-1.5 py-0.5 rounded border border-grey-100 whitespace-nowrap">
+                                <span className="text-[10px] font-medium text-grey-500 bg-surface px-1.5 py-0.5 rounded border border-grey-100 whitespace-nowrap">
                                   {entry.dlc}
                                 </span>
                               </div>
@@ -1500,7 +1517,7 @@ function RecapContent() {
                                   className={`
                                 px-1.5 py-0.5 rounded text-[10px] font-bold tracking-tight
                                 ${entry.pattern.startsWith("SC")
-                                      ? "bg-purple-50 text-purple-600"
+                                      ? "bg-purple-50 text-purple-600 dark:bg-purple-500/20 dark:text-purple-200"
                                       : "bg-grey-100 text-grey-600"
                                     }
                               `}
@@ -1556,11 +1573,11 @@ function RecapContent() {
       {/* 닉네임 가리기 확인 모달 */}
       {showConfirmModal && (
         <div
-          className="fixed inset-0 z-[70] flex items-center justify-center backdrop-blur-md bg-[#f2f4f6]/80"
+          className="fixed inset-0 z-[70] flex items-center justify-center backdrop-blur-md bg-canvas/80"
           onClick={() => setShowConfirmModal(false)}
         >
           <div
-            className="bg-white rounded-[24px] p-5 mx-4 max-w-xs w-full"
+            className="bg-surface rounded-[24px] p-5 mx-4 max-w-xs w-full"
             style={{ boxShadow: "0 0 24px rgba(0, 0, 0, 0.03)" }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -1576,7 +1593,7 @@ function RecapContent() {
               </button>
               <button
                 onClick={() => handleConfirmSave(true)}
-                className="flex-1 py-2.5 rounded-[12px] bg-brand text-white font-bold text-sm hover:bg-[#1b64da] transition-colors"
+                className="flex-1 py-2.5 rounded-[12px] bg-brand text-white font-bold text-sm hover:bg-brand-strong transition-colors"
               >
                 넹
               </button>
@@ -1587,7 +1604,7 @@ function RecapContent() {
 
       {isSaving && (
         <div
-          className="fixed inset-0 z-[60] flex items-center justify-center bg-[#f2f4f6]"
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-canvas"
           role="status"
           aria-live="polite"
           aria-label="이미지 저장 중"
@@ -1606,7 +1623,7 @@ export default function RecapResult() {
   return (
     <Suspense
       fallback={
-        <main className="min-h-screen w-full bg-[#f2f4f6] pt-10">
+        <main className="min-h-screen w-full bg-canvas pt-10">
           <div className="mx-auto max-w-5xl px-6">
             <div className="text-center py-20">
               <div className="text-grey-600">로딩 중...</div>

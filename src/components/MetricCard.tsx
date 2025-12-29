@@ -20,7 +20,7 @@ export default function MetricCard({
   style
 }: MetricCardProps) {
   return (
-    <div className={`ui-card flex h-full flex-col justify-between hover:bg-white transition-colors ${className ?? ""}`} style={style}>
+    <div className={`ui-card flex h-full flex-col justify-between hover:bg-surface-hover transition-colors ${className ?? ""}`} style={style}>
       <div className="flex flex-col gap-1">
         <div className="flex items-center justify-between">
           <p className="text-sm font-bold text-grey-500">{title}</p>

@@ -75,9 +75,9 @@ export default function Tooltip({ content, children }: TooltipProps) {
                         transition={{ duration: 0.15 }}
                         className="absolute left-1/2 top-full mt-2 -translate-x-1/2 z-50 whitespace-nowrap pointer-events-none"
                     >
-                        <div className="bg-gray-900/90 text-white text-xs px-3 py-1.5 rounded-lg shadow-xl backdrop-blur-sm border border-white/10">
+                        <div className="bg-grey-900/90 text-grey-50 text-xs px-3 py-1.5 rounded-lg shadow-xl backdrop-blur-sm border border-grey-700/20">
                             {content}
-                            <div className="absolute -top-1 left-1/2 -ml-1 border-4 border-transparent border-b-gray-900/90" />
+                            <div className="absolute -top-1 left-1/2 -ml-1 border-4 border-transparent border-b-grey-900/90" />
                         </div>
                     </motion.div>
                 )}

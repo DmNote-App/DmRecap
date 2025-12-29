@@ -3,6 +3,8 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useEffect, useState, type ReactNode } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
+import { ThemeProvider } from "@/context/theme";
+import ThemeToggle from "@/components/ThemeToggle";
 
 function usePrefersReducedMotion() {
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
@@ -80,6 +82,11 @@ export default function Providers({ children }: { children: ReactNode }) {
   }, [pathname, hasNickname, prefersReducedMotion]);
 
   return (
-    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    <ThemeProvider>
+      <QueryClientProvider client={queryClient}>
+        {children}
+        <ThemeToggle />
+      </QueryClientProvider>
+    </ThemeProvider>
   );
 }
