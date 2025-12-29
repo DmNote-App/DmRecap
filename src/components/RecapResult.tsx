@@ -550,10 +550,13 @@ function PlayStyleLineChart({
 
   // Dimensions
   const height = 240; // Fixed height in pixels for the chart drawing area
-  const paddingX = 0; // Fill full width
+  const paddingX = captureMode ? 12 : 0; // Avoid stroke clipping in capture
   const paddingY = 20;
   const chartHeight = height - paddingY * 2;
-  const chartWidth = width - paddingX * 2;
+  const chartWidth = Math.max(width - paddingX * 2, 0);
+  const chartXStart = paddingX;
+  const chartXEnd = Math.max(width - paddingX, paddingX);
+  const step = buttons.length > 1 ? chartWidth / (buttons.length - 1) : 0;
 
   // Calculate max value for dynamic scaling
   const maxValue = Math.max(...buttons.map((b) => stats.buttonRatios[b] || 0));
@@ -566,7 +569,7 @@ function PlayStyleLineChart({
     const normalized = Math.min(Math.max(value, 0), yDomainMax) / yDomainMax;
 
     // Distribute equally along X
-    const x = paddingX + i * (chartWidth / (buttons.length - 1));
+    const x = paddingX + i * step;
     // Y is inverted (0 at bottom)
     const y = height - paddingY - normalized * chartHeight;
 
@@ -598,6 +601,7 @@ function PlayStyleLineChart({
         height="100%"
         viewBox={`0 0 ${width} ${height}`}
         className="overflow-visible"
+        overflow="visible"
         preserveAspectRatio="xMidYMid meet"
       >
         <defs>
@@ -620,9 +624,9 @@ function PlayStyleLineChart({
           return (
             <line
               key={`hgrid-${level}`}
-              x1={0}
+              x1={chartXStart}
               y1={y}
-              x2={width}
+              x2={chartXEnd}
               y2={y}
               stroke="#d1d6db"
               strokeWidth="1"

@@ -404,6 +404,9 @@ export function useImageSaver() {
       const originalLang = rootElement.getAttribute("lang");
       let externalImages: ExternalImageConversionResult | null = null;
       let videoReplacements: VideoReplacement[] = [];
+      const isFirefox =
+        typeof navigator !== "undefined" &&
+        /firefox/i.test(navigator.userAgent);
 
       try {
         document.documentElement.style.overflow = "hidden";
@@ -468,40 +471,7 @@ export function useImageSaver() {
         let downloadUrl = "";
         let revokeDownloadUrl: (() => void) | null = null;
 
-        try {
-          // html-to-image를 사용하여 캡처 (크로스 플랫폼 호환성 우수)
-          const captureOptions = {
-            quality: 1.0,
-            pixelRatio: options.pixelRatio ?? 3,
-            backgroundColor: options.backgroundColor ?? "#f2f4f6",
-            fontEmbedCSS: fontEmbedCSS || undefined,
-            // blob URL은 cache busting 쿼리 추가 시 실패할 수 있음
-            cacheBust: shouldBustCache,
-            imagePlaceholder: IMAGE_PLACEHOLDER,
-            filter: (node: HTMLElement) => {
-              return !(node instanceof HTMLVideoElement);
-            },
-          };
-
-          if (typeof htmlToImage.toBlob === "function") {
-            const blob = await htmlToImage.toBlob(
-              captureTarget,
-              captureOptions
-            );
-            if (blob) {
-              downloadUrl = URL.createObjectURL(blob);
-              revokeDownloadUrl = () => URL.revokeObjectURL(downloadUrl);
-            } else {
-              dataUrl = await htmlToImage.toPng(
-                captureTarget,
-                captureOptions
-              );
-            }
-          } else {
-            dataUrl = await htmlToImage.toPng(captureTarget, captureOptions);
-          }
-        } catch (htmlError) {
-          console.warn("html-to-image 실패, html2canvas로 재시도:", htmlError);
+        const renderWithHtml2Canvas = async () => {
           const canvas = await html2canvas(captureTarget, {
             scale: options.pixelRatio ?? 3,
             backgroundColor: options.backgroundColor ?? "#f2f4f6",
@@ -522,6 +492,50 @@ export function useImageSaver() {
             revokeDownloadUrl = () => URL.revokeObjectURL(downloadUrl);
           } else {
             dataUrl = canvas.toDataURL("image/png", 1.0);
+          }
+        };
+
+        if (isFirefox) {
+          await renderWithHtml2Canvas();
+        } else {
+          try {
+            // html-to-image를 사용하여 캡처 (크로스 플랫폼 호환성 우수)
+            const captureOptions = {
+              quality: 1.0,
+              pixelRatio: options.pixelRatio ?? 3,
+              backgroundColor: options.backgroundColor ?? "#f2f4f6",
+              fontEmbedCSS: fontEmbedCSS || undefined,
+              // blob URL은 cache busting 쿼리 추가 시 실패할 수 있음
+              cacheBust: shouldBustCache,
+              imagePlaceholder: IMAGE_PLACEHOLDER,
+              filter: (node: HTMLElement) => {
+                return !(node instanceof HTMLVideoElement);
+              },
+            };
+
+            if (typeof htmlToImage.toBlob === "function") {
+              const blob = await htmlToImage.toBlob(
+                captureTarget,
+                captureOptions
+              );
+              if (blob) {
+                downloadUrl = URL.createObjectURL(blob);
+                revokeDownloadUrl = () => URL.revokeObjectURL(downloadUrl);
+              } else {
+                dataUrl = await htmlToImage.toPng(
+                  captureTarget,
+                  captureOptions
+                );
+              }
+            } else {
+              dataUrl = await htmlToImage.toPng(captureTarget, captureOptions);
+            }
+          } catch (htmlError) {
+            console.warn(
+              "html-to-image 실패, html2canvas로 재시도:",
+              htmlError
+            );
+            await renderWithHtml2Canvas();
           }
         }
 
