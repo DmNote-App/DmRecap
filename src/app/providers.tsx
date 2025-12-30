@@ -54,29 +54,84 @@ export default function Providers({ children }: { children: ReactNode }) {
       return;
     }
 
-    let lenis: { raf: (time: number) => void; destroy: () => void } | null =
-      null;
+    let lenis: {
+      raf: (time: number) => void;
+      destroy: () => void;
+      on: (event: string, cb: (...args: unknown[]) => void) => void;
+      off?: (event: string, cb: (...args: unknown[]) => void) => void;
+      isScrolling: boolean | string;
+    } | null = null;
     let rafId: number | null = null;
     let cancelled = false;
+    let lastActivity = 0;
+    const idleDelay = 160;
+
+    const scheduleRaf = () => {
+      if (rafId !== null || cancelled || !lenis) return;
+      rafId = requestAnimationFrame(raf);
+    };
+
+    const raf = (time: number) => {
+      if (!lenis) return;
+      lenis.raf(time);
+      const now = performance.now();
+      const isActive = lenis.isScrolling !== false;
+
+      if (isActive) {
+        lastActivity = now;
+      }
+
+      if (isActive || now - lastActivity < idleDelay) {
+        rafId = requestAnimationFrame(raf);
+        return;
+      }
+
+      rafId = null;
+    };
+
+    const markActivity = () => {
+      lastActivity = performance.now();
+      scheduleRaf();
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "hidden") {
+        if (rafId !== null) {
+          cancelAnimationFrame(rafId);
+          rafId = null;
+        }
+        return;
+      }
+      markActivity();
+    };
 
     const start = async () => {
       const { default: Lenis } = await import("lenis");
       if (cancelled) return;
       lenis = new Lenis();
-      const raf = (time: number) => {
-        lenis?.raf(time);
-        rafId = requestAnimationFrame(raf);
-      };
-      rafId = requestAnimationFrame(raf);
+      lastActivity = performance.now();
+      scheduleRaf();
+      lenis.on("scroll", markActivity);
+      window.addEventListener("wheel", markActivity, { passive: true });
+      window.addEventListener("touchstart", markActivity, { passive: true });
+      window.addEventListener("touchmove", markActivity, { passive: true });
+      window.addEventListener("keydown", markActivity);
+      document.addEventListener("visibilitychange", handleVisibilityChange);
     };
 
     void start();
 
     return () => {
       cancelled = true;
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("wheel", markActivity);
+      window.removeEventListener("touchstart", markActivity);
+      window.removeEventListener("touchmove", markActivity);
+      window.removeEventListener("keydown", markActivity);
       if (rafId !== null) {
         cancelAnimationFrame(rafId);
       }
+      lenis?.off?.("scroll", markActivity);
       lenis?.destroy();
     };
   }, [pathname, hasNickname, prefersReducedMotion]);

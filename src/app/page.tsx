@@ -57,8 +57,7 @@ function HomeContent() {
     <main className="relative flex h-[100dvh] w-full flex-col items-center justify-center overflow-hidden px-6">
       {/* Background Blobs (Glass Effect) */}
       <div className="absolute inset-0 pointer-events-none -z-10 bg-canvas">
-        <div className="absolute -top-[10%] -left-[10%] w-[50vw] h-[50vw] rounded-full bg-blue-200/40 blur-[120px] dark:bg-blue-500/10" />
-        <div className="absolute top-[20%] -right-[10%] w-[40vw] h-[40vw] rounded-full bg-indigo-200/40 blur-[120px] dark:bg-indigo-500/10" />
+        <div className="absolute inset-0 recap-hero-bg" />
       </div>
 
       <div className="z-10 w-full max-w-lg flex flex-col gap-10">

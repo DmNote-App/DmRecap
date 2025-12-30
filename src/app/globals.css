@@ -35,6 +35,10 @@
   --chip-blue-bg: 219 234 254;
   --chip-blue-text: 37 99 235;
 
+  --hero-blob-a: 191 219 254;
+  --hero-blob-b: 199 210 254;
+  --hero-blob-opacity: 0.35;
+
   --skeleton-base: 242 244 246;
   --skeleton-highlight: 255 255 255;
 
@@ -97,6 +101,10 @@ html.theme-switching *::after {
   /* Deeper, less saturated blue for chips */
   --chip-blue-text: 191 219 254;
 
+  --hero-blob-a: 59 130 246;
+  --hero-blob-b: 99 102 241;
+  --hero-blob-opacity: 0.12;
+
   --skeleton-base: 32 33 36;
   --skeleton-highlight: 48 50 54;
 
@@ -152,6 +160,17 @@ body {
   color: rgb(var(--grey-900));
   font-family: var(--font-body);
   -webkit-font-smoothing: antialiased;
+}
+
+.recap-hero-bg {
+  background-image:
+    radial-gradient(50vw 50vw at 10% 10%,
+      rgb(var(--hero-blob-a) / var(--hero-blob-opacity)),
+      transparent 70%),
+    radial-gradient(40vw 40vw at 90% 30%,
+      rgb(var(--hero-blob-b) / var(--hero-blob-opacity)),
+      transparent 70%);
+  background-repeat: no-repeat;
 }
 
 /* Custom Scrollbar */
