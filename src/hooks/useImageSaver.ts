@@ -252,6 +252,27 @@ const isLowEndDevice = () => {
   return isOlderIOS;
 };
 
+const waitForFonts = async (timeoutMs = 2000) => {
+  if (typeof document === "undefined" || !("fonts" in document)) return;
+  const fontFaceSet = document.fonts;
+  const fontLoads = [
+    '400 1em "Pretendard JP"',
+    '500 1em "Pretendard JP"',
+    '600 1em "Pretendard JP"',
+    '700 1em "Pretendard JP"',
+    '800 1em "Pretendard JP"',
+    '900 1em "Pretendard JP"',
+  ].map((font) => fontFaceSet.load(font).catch(() => []));
+  const readyPromise = fontFaceSet.ready.catch(() => undefined);
+  const timeout = new Promise<void>((resolve) => {
+    setTimeout(resolve, timeoutMs);
+  });
+  await Promise.race([
+    Promise.all([...fontLoads, readyPromise]).then(() => undefined),
+    timeout,
+  ]);
+};
+
 /**
  * 이미지 저장 기능을 제공하는 커스텀 훅
  * modern-screenshot를 사용하여 크로스 브라우저 호환성 보장 (Firefox, Chrome, Safari, iOS, Android)
@@ -453,6 +474,7 @@ export function useImageSaver() {
         }
         rootElement.setAttribute("lang", document.documentElement.lang || "ko");
         rootElement.classList.add("capture-mode");
+        await waitForFonts();
         await new Promise((resolve) =>
           requestAnimationFrame(() => resolve(null))
         );

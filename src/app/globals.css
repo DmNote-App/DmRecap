@@ -185,6 +185,7 @@ body {
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
   font-synthesis: none;
+  white-space: nowrap;
 }
 
 .recap-root.capture-mode *,
@@ -193,6 +194,7 @@ body {
   animation: none !important;
   transition: none !important;
   caret-color: transparent;
+  white-space: nowrap !important;
 }
 
 .recap-root.capture-mode .recap-container {
